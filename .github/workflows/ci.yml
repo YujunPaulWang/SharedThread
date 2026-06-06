@@ -1,0 +1,36 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [ 18.x, 20.x, 22.x ]
+        # Tests your multi-threading codebase across current LTS versions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/with-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm' # Automatically caches node_modules to speed up runs
+
+      - name: Install dependencies
+        run: npm ci # Uses 'npm ci' for reliable, clean lockfile installation
+
+      - name: Run Tests
+        run: npm run test
+        # The '-- --run' flag forces Vitest to run in CI/single-run mode instead of watch mode
+
+      - name: Compile and Build Package
+        run: npm run build

@@ -1,0 +1,36 @@
+{
+    "name": "sharedthread",
+    "version": "1.0.0",
+    "description": "DESCRIPTION GOES HERE",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "typecheck": "tsc",
+        "build": "npm run typecheck && tsup src/index.ts --format cjs,esm --dts",
+        "watch": "tsup src/index.ts --format cjs,esm --watch",
+        "test": "vitest run",
+        "test/watch": "vitest"
+    },
+    "keywords": [],
+    "author": "Yujun Wang <paulwangto2018@gmail.com>",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^25.9.1",
+        "tsup": "^8.0.0",
+        "tsx": "^4.22.4",
+        "typescript": "^5.0.0",
+        "vitest": "^4.1.8"
+    }
+}
