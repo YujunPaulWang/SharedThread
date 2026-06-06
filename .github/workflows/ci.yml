@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         node-version: [ 22.x, 24.x ]
-        # Tests your multi-threading codebase across current LTS versions
 
     steps:
       - name: Checkout repository
@@ -23,14 +22,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm' # Automatically caches node_modules to speed up runs
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci # Uses 'npm ci' for reliable, clean lockfile installation
-
-      - name: Run Tests
-        run: npm run test
-        # The '-- --run' flag forces Vitest to run in CI/single-run mode instead of watch mode
+        run: npm ci
 
       - name: Compile and Build Package
         run: npm run build
+
+      - name: Run Tests
+        run: npm run test -- --run
