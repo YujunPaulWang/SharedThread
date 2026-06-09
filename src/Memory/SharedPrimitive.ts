@@ -1,18 +1,24 @@
 import { SharedHeap } from "./SharedHeap.js";
+import { SharedType } from "./SharedType.js";
 
 export interface SharedPrimitiveStatic<T> {
-    readonly size: number;
+    typeID: number;
+    byteSize: number
+    isPtr: boolean;
+    isArr: boolean;
 
-    new(heap: SharedHeap, v?: T | null): SharedPrimitive<T>;
-
-    //read(heap: SharedHeap, addr: number): T;
-    //write(heap: SharedHeap, addr: number, v: T): void;
+    fromData(heap: SharedHeap, v: any): SharedPrimitive<T>;
+    new(heap: SharedHeap, addr: number): SharedPrimitive<T>;
 }
 
-export interface SharedPrimitive<T> {
-    readonly addr: number;
-    readonly heap: SharedHeap;
+export abstract class SharedPrimitive<T> extends SharedType {
+    public static typeID: number;
+    public static readonly byteSize: number;
+    public static readonly isPtr: boolean = false;
+    public static readonly isArr: boolean = false;
 
-    set value(v: T);
-    get value(): T;
+    public abstract set value(v: T);
+    public abstract get value(): T;
 }
+
+export type SharedPrimitiveClass<T> = SharedPrimitiveStatic<T>;

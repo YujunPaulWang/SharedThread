@@ -16,6 +16,9 @@
     "files": [
         "dist"
     ],
+    "sideEffects": [
+        "./src/Memory/*.ts"
+    ],
     "scripts": {
         "typecheck": "tsc",
         "build": "npm run typecheck && tsup src/index.ts --format cjs,esm --dts",

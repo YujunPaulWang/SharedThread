@@ -1,27 +1,33 @@
-import type { SharedReference } from "./SharedReference.js";
-import type { SharedType, SharedTypeClass } from "./SharedType.js";
+import { type SharedType, type SharedTypeClass } from "./SharedType.js";
+import { SharedPrimitive, type SharedPrimitiveStatic } from "./SharedPrimitive.js";
 import { SharedHeap } from "./SharedHeap.js";
+import { TypeRegistry } from "./TypeRegistry.js";
+import { SharedArray } from "./SharedArray.js";
 
+interface PointerDefinition {
+    type: SharedTypeClass;
+    addr?: number;
+}
 
-export class SharedPointer<T extends SharedType> implements SharedReference {
-    static readonly size: number = 4;
+export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
+    public static readonly byteSize: number = 4;
+    public static readonly isPtr: boolean = true;
 
-    private readonly _heldType: SharedTypeClass;
-    private readonly _addr: number;
-    private readonly _heap: SharedHeap;
-    private heldVar: T;
+    public static fromData(heap: SharedHeap, v: PointerDefinition) {
+        let addr = heap.allocate(SharedPointer.byteSize, v.type.typeID, SharedPointer.isPtr);
+        let obj = new SharedPointer(heap, addr);
+        if (v.addr) obj.value = addr;
 
-    constructor(heap: SharedHeap, heldType: SharedTypeClass, p: number | T = -1) {
-        this._heap = heap;
-        this._addr = heap.allocate(SharedPointer.size);
-        this._heldType = heldType;
-        if (typeof p == "number") {
-            this.heldVar = new this._heldType(this._heap, p) as T;
-        } else if (p instanceof this._heldType) {
-            this.heldVar = p;
-        } else {
-            throw new Error("pointer type mismatch");
-        }
+        return obj;
+    }
+
+    protected readonly _heldType: SharedTypeClass;
+    protected _deref: SharedType | null = null;
+
+    constructor(heap: SharedHeap, addr: number, dataType?: SharedTypeClass) {
+        super(heap, addr);
+
+        this._heldType = dataType ?? (TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr)));
     }
 
     get heldType(): SharedTypeClass {
@@ -33,22 +39,25 @@ export class SharedPointer<T extends SharedType> implements SharedReference {
     get heap(): SharedHeap {
         return this._heap;
     }
-    set pointer(p: number) {
-        this._heap.view.setInt32(this._addr, p);
-    }
-    get pointer(): number {
-        return this._heap.view.getInt32(this._addr);
-    }
-    set value(p: number | T) {
-        if (typeof p == "number") {
-            this.heldVar = new this._heldType(this._heap, p) as T;
-        } else if (p instanceof this._heldType) {
-            this.heldVar = p;
+    set value(p: number) {
+        this._heap.view.setUint32(this._addr, p);
+        if (this.heap.getArrayAt(p)) {
+            if (this._heldType != SharedArray) throw new Error("pointer points to wrong type");
         } else {
-            throw new Error("pointer type mismatch");
+            if (this._heldType != (TypeRegistry.getTypeByIndex(this._heap.getTypeIDAt(this._addr)))) throw new Error("pointer points to wrong type");
         }
+        this._deref = new this._heldType(this._heap, p);
     }
-    get value(): T {
-        return this.heldVar;
+    get value(): number {
+        return this._heap.view.getUint32(this._addr) as number;
+    }
+    set deref(v: T) {
+        if (!(v instanceof this._heldType)) throw new Error("assigned wrong type to pointer");
+        this.value = v.addr;
+        this._deref = v;
+    }
+    get deref(): T {
+        return this._deref as T;
     }
 }
+SharedPointer satisfies SharedPrimitiveStatic<any>;
