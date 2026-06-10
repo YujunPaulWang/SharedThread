@@ -1,6 +1,6 @@
 {
     "name": "sharedthread",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A high-performance asynchronous multithreading library that wraps Node.js Worker Threads and SharedArrayBuffer for efficient, zero-copy variable sharing.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -8,16 +8,18 @@
     "types": "./dist/index.d.ts",
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
-            "require": "./dist/index.cjs"
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
         }
     },
     "files": [
         "dist"
-    ],
-    "sideEffects": [
-        "./src/Memory/*.ts"
     ],
     "scripts": {
         "typecheck": "tsc",
@@ -35,5 +37,13 @@
         "tsx": "^4.22.4",
         "typescript": "^5.0.0",
         "vitest": "^4.1.8"
-    }
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/YujunPaulWang/SharedThread"
+    },
+    "bugs": {
+        "url": "https://github.com/YujunPaulWang/SharedThread"
+    },
+    "homepage": "https://github.com/YujunPaulWang/SharedThread"
 }
