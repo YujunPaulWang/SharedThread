@@ -7,7 +7,7 @@ import os from "node:os";
 
 export class MainThread extends Thread {
 
-    public static get optimalTypeRegistrys(): number {
+    public static get optimalThreads(): number {
         return os.availableParallelism();
     }
 

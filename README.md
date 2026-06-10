@@ -2,4 +2,4 @@
 
 [![v1.0.1](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
 
-A NodeJS/Typescript libaary for worker_threads.
+A NodeJS/Typescript library for worker_threads.
