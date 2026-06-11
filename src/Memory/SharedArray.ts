@@ -1,5 +1,5 @@
 import { SharedReference, type SharedReferenceStatic } from "./SharedReference.js";
-import { type SharedType, type SharedTypeClass } from "./SharedType.js";
+import { SharedType, type SharedTypeClass } from "./SharedType.js";
 import { SharedHeap } from "./SharedHeap.js";
 import { SharedPointer } from "./SharedPointer.js";
 import { SharedPrimitive, type SharedPrimitiveClass } from "./SharedPrimitive.js";
@@ -13,6 +13,10 @@ interface ArrayDefinition {
     array?: any[],
 }
 
+export interface SharedArray<T extends SharedType> {
+    [index: number]: T;
+}
+
 export class SharedArray<T extends SharedType> extends SharedReference {
 
     public static readonly isArr: boolean = true;
@@ -24,8 +28,8 @@ export class SharedArray<T extends SharedType> extends SharedReference {
     static fromData<U extends SharedReference>(heap: SharedHeap, v: any): U;
 
     static fromData<U extends SharedReference>(
-        this: (new (heap: SharedHeap, addr: number) => U) & SharedReferenceStatic, 
-        heap: SharedHeap, 
+        this: (new (heap: SharedHeap, addr: number) => U) & SharedReferenceStatic,
+        heap: SharedHeap,
         v: ArrayDefinition
     ): U {
         let length = v.length;
@@ -44,7 +48,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
 
         if (v.array) {
             for (let i = 0; i < length; i++) {
-                obj.elements[i] = v.array[i];
+                obj.elements[i].value = v.array[i];
             }
         }
 
@@ -78,17 +82,26 @@ export class SharedArray<T extends SharedType> extends SharedReference {
 
         return new Proxy(this, {
             get(target: SharedArray<T>, prop: any, receiver: typeof Proxy) {
-                if (Number.isInteger(Number(prop)) && prop >= 0 && prop < target._length) {
-                    return target.elements[prop];
+                let n = Number(prop);
+                if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
+                    if (target.elements[n] != undefined) {
+                        return target.elements[n];
+                    }
                 }
 
                 return Reflect.get(target, prop, receiver);
             },
             set(target, prop, value, receiver) {
-                if (typeof prop == "number" && prop >= 0 && prop < target._length) {
-                    if (target.elements[prop] && "value" in target.elements[prop]) {
-                        target.elements[prop].value = value;
-                        return true;
+                let n = Number(prop);
+                if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
+                    if (target.elements[n] != undefined) {
+                        if (target.elements[n] instanceof SharedPrimitive) {
+                            target.elements[n].value = value;
+                            return true;
+                        } else if (target.elements[n] instanceof SharedPointer) {
+                            target.elements[n].value = value.addr;
+                            return true;
+                        }
                     }
                 }
 
