@@ -40,9 +40,9 @@ export class SharedArray<T extends SharedType> extends SharedReference {
      * Populates initial values if provided in the definition payload.
      * 
      * @template U The expected return reference type.
-     * @this {SharedReferenceStatic} The constructor context bound to a SharedReference class type.
+     * @this The constructor context bound to a SharedReference class type.
      * @param heap The target shared heap layout.
-     * @param {ArrayDefinition} v Configuration detailing item layout, element type, length, and optional initial array values.
+     * @param v Configuration detailing item layout, element type, length, and optional initial array values.
      * @returns A newly allocated SharedArray instance.
      */
     static fromData<U extends SharedReference>(
