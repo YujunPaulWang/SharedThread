@@ -25,8 +25,26 @@ export class SharedArray<T extends SharedType> extends SharedReference {
         length: { type: SharedUint32 },
     }
 
+    /**
+     * Overload for initializing a SharedReference wrapper from generic data.
+     * 
+     * @template U The expected return reference type.
+     * @param heap The shared heap instantiation target.
+     * @param v Generic input payload.
+     * @returns A fresh reference instance.
+     */
     static fromData<U extends SharedReference>(heap: SharedHeap, v: any): U;
 
+    /**
+     * Allocates memory on the heap and creates a SharedArray from an array definition.
+     * Populates initial values if provided in the definition payload.
+     * 
+     * @template U The expected return reference type.
+     * @this {SharedReferenceStatic} The constructor context bound to a SharedReference class type.
+     * @param heap The target shared heap layout.
+     * @param {ArrayDefinition} v Configuration detailing item layout, element type, length, and optional initial array values.
+     * @returns A newly allocated SharedArray instance.
+     */
     static fromData<U extends SharedReference>(
         this: (new (heap: SharedHeap, addr: number) => U) & SharedReferenceStatic,
         heap: SharedHeap,
@@ -65,6 +83,13 @@ export class SharedArray<T extends SharedType> extends SharedReference {
     protected readonly elements: T[] = [];
 
 
+    /**
+     * Instantiates a new SharedArray view.
+     * Wraps the instance in a Proxy to trap standard integer indexing for reads/writes.
+     * 
+     * @param heap The heap memory container context.
+     * @param addr The base address pointer inside shared memory.
+     */
     constructor(heap: SharedHeap, addr: number) {
         super(heap, addr);
 
@@ -136,4 +161,3 @@ export class SharedArray<T extends SharedType> extends SharedReference {
     }
 }
 SharedArray satisfies SharedReferenceStatic;
-
