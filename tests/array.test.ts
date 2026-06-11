@@ -38,9 +38,6 @@ class MockDataView {
 class MockSharedPrimitive extends SharedPrimitive<any> {
   static byteSize = 4;
   static typeID = 42;
-  constructor(public heap: any, public addr: number) {
-    super(heap, addr);
-  }
   
   set value(v: any) { this.heap.view.setInt32(this.addr, v); }
   get value() { return this.heap.view.getInt32(this.addr); }
