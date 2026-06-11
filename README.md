@@ -134,6 +134,8 @@ async function startWorker(){
     // the array property can be used to set an initial value(optional)
     /*array: [3, 8, 3, 1, 0, -5],*/
   });
+  //shorthand for 
+  //myArray[3].value = 1
   myArray[3] = 1;
 
   // make the worker aware of the array and wait for confirmation
@@ -153,7 +155,7 @@ async function runWorker(){
 
   //read data from array
   console.log(myArray.length); // outputs: 6
-  console.log(myArray[3]); // outputs: 1
+  console.log(myArray[3].value); // outputs: 1
 }
 runWorker();
 ```
@@ -225,7 +227,7 @@ async function runWorker(){
 
   //read data from array
   console.log(myStruct.foo); // outputs: 6
-  console.log(myStruct.bar.deref[2]); // outputs: 5
+  console.log(myStruct.bar.deref[2].value); // outputs: 5
 }
 runWorker();
 ```
