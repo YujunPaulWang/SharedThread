@@ -7,6 +7,9 @@ import os from "node:os";
 
 export class MainThread extends Thread {
 
+    /**
+     * Gets the recommended number of parallel threads based on available hardware resources.
+     */
     public static get optimalThreads(): number {
         return os.availableParallelism();
     }
@@ -15,6 +18,11 @@ export class MainThread extends Thread {
 
     private active: boolean = false;
 
+    /**
+     * Creates and initializes a new MainThread instance, spawning the underlying worker.
+     * @param path The filepath string or a function to be executed as the worker payload.
+     * @param config Optional configuration settings for managing worker behaviors and options.
+     */
     constructor(path: string | Function, config: ThreadConfig = {}) {
         //setup config
         config = { ...config };
@@ -111,6 +119,9 @@ export class MainThread extends Thread {
 
     }
 
+    /**
+     * Resolves asynchronously once the underlying worker thread has completed initialization and is active.
+     */
     public async ready(): Promise<void> {
         if (this.active) return;
 
@@ -121,6 +132,9 @@ export class MainThread extends Thread {
         });
     }
 
+    /**
+     * Forces the worker thread to stop execution immediately.
+     */
     public terminate(): Promise<number> {
         if (!this.active) this.err("cannot terminate worker(worker is not active)");
 
@@ -134,19 +148,33 @@ export class MainThread extends Thread {
     //         console.log(`${new Date().toTimeString()} - ${threadName}(${threadId}) - ${msg}`);
     //     }
     // }
+    
+    /**
+     * Formats and throws an internal execution error for the main thread environment.
+     * @param msg The error instance or error message string.
+     */
     private err(msg: string | Error): void {
         ///TODO
         throw new Error(`${new Date().toTimeString()} - ${threadName}(${threadId}) - ${msg}`);
     }
 
+    /**
+     * Indicates whether the worker thread is actively running.
+     */
     public get isActive(): boolean {
         return this.active;
     }
 
-    //functions that pass through the call
+    /**
+     * Keeps the Node.js event loop active as long as the worker thread is running.
+     */
     public ref(): void {
         this.port.ref();
     }
+
+    /**
+     * Allows the Node.js event loop to exit even if the worker thread remains active.
+     */
     public unref(): void {
         this.port.unref();
     }
