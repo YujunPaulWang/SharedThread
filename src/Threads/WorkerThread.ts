@@ -8,6 +8,9 @@ export class WorkerThread extends Thread {
 
     private _workerData: any = workerData.workerData;
 
+    /**
+     * Creates and initializes a new WorkerThread instance connected to the parent thread port.
+     */
     constructor() {
         if (parentPort == null) throw new Error("cannot find parent port");
         super(parentPort as PortHandle, workerData.config);
@@ -45,10 +48,17 @@ export class WorkerThread extends Thread {
         });
     }
 
+    /**
+     * Gets the initial configuration data passed to this worker thread.
+     */
     public get workerData() {
         return this._workerData;
     }
 
+    /**
+     * Formats and throws an internal execution error for the worker thread environment.
+     * @param msg The error instance or error message string.
+     */
     private err(msg: string | Error) {
         ///TODO
         throw new Error(`${new Date().toTimeString()} - ${threadName}(${threadId}) - ${msg}`);
