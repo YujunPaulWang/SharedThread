@@ -13,6 +13,12 @@ export type VariableDeclaration = {
 };
 
 export class SharedStruct extends SharedReference {
+    /**
+     * Allocates memory on the shared heap and creates an instantiated struct populated with initial data.
+     * @param heap - The shared heap instance where memory will be allocated.
+     * @param param - Initialization parameters or nested objects to imprint onto the struct fields.
+     * @returns A new instance of the specific SharedStruct subclass pointing to the allocated space.
+     */
     static fromData<T extends SharedStruct>(
         this: (new (heap: SharedHeap, addr: number) => T) & SharedReferenceStatic, heap: SharedHeap, param: any
     ): T {
@@ -28,6 +34,11 @@ export class SharedStruct extends SharedReference {
 
     protected properties: Record<string, SharedType> = {};
 
+    /**
+     * Creates an instance of SharedStruct, mapping layout offsets and proxying properties.
+     * @param heap - The shared heap instance managing memory layouts.
+     * @param addr - The base address of this struct instance on the shared heap.
+     */
     constructor(heap: SharedHeap, addr: number) {
         super(heap, addr);
 
@@ -77,6 +88,10 @@ export class SharedStruct extends SharedReference {
         });
     }
 
+    /**
+     * Recursively writes property values from a plain object into the corresponding shared property slots.
+     * @param obj - The dictionary containing fields matching the struct properties.
+     */
     imprint(obj?: Record<string, any>): void {
         if (obj == undefined) return;
         for (let key in obj) {
@@ -91,6 +106,10 @@ export class SharedStruct extends SharedReference {
         }
     }
 
+    /**
+     * Computes the memory size required for the struct layout class declaration.
+     * @returns The total number of bytes needed for instances of this constructor.
+     */
     static get byteSize(): number {
         let size = 0;
         let properties = this.properties;
@@ -106,6 +125,10 @@ export class SharedStruct extends SharedReference {
         return size;
     }
 
+    /**
+     * Computes the calculated layout byte size for the current struct instance constructor.
+     * @returns The active byte size limit for this struct configuration.
+     */
     get byteSize(): number {
         let size = 0;
         let properties = (this.constructor as typeof SharedStruct).properties;
