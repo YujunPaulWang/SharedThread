@@ -13,5 +13,8 @@ export * from "./SharedPointer.js";
 
 export * from "./SharedInt32.js";
 export * from "./SharedUint32.js";
+export * from "./SharedFloat64.js";
+export * from "./SharedChar.js";
+export * from "./SharedBoolean.js";
 
 export * from "./SharedStruct.js";
