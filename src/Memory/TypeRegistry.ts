@@ -7,26 +7,11 @@ export class TypeRegistry {
     private static typeToHash: Map<SharedTypeClass, number> = new Map();
     private static indexToHash: Uint32Array = new Uint32Array(0);
 
-    // private static cyrb53(str: string, seed: number = 0): number {
-    //     let h1 = 0xdeadbeef ^ seed;
-    //     let h2 = 0x41c6ce57 ^ seed;
-
-    //     for (let i = 0, ch: number; i < str.length; i++) {
-    //         ch = str.charCodeAt(i);
-    //         h1 = Math.imul(h1 ^ ch, 2654435761);
-    //         h2 = Math.imul(h2 ^ ch, 1597334677);
-    //     }
-
-    //     h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
-    //     h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-
-    //     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
-    //     h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-
-    //     // Combine the two 32-bit hashes into a single 53-bit unsigned integer
-    //     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
-    // }
-
+    /**
+     * Calculates the 32-bit FNV-1a hash of a given string.
+     * @param str - The input string to hash.
+     * @returns The unsigned 32-bit integer hash value.
+     */
     public static fnv1(str: string): number {
         let hash = 0x811c9dc5; // FNV-1a 32-bit offset basis
 
@@ -39,6 +24,12 @@ export class TypeRegistry {
         return hash >>> 0; // Force to unsigned 32-bit integer
     }
 
+    /**
+     * Registers a shared type class, assigns it a type ID, and tracks its hash.
+     * @param dataType - The shared type class constructor to register.
+     * @returns The newly assigned index-based type ID.
+     * @throws {Error} If the class definition has already been registered.
+     */
     public static registerType(dataType: SharedTypeClass): number {
         if (this.typeToIndex.has(dataType)) throw new Error("class is alreadly registered");
 
@@ -64,10 +55,19 @@ export class TypeRegistry {
         return idx;
     }
 
+    /**
+     * Extracts an ArrayBuffer representation of the registered type hash array.
+     * @returns The underlying buffer containing the chronological sequence of type hashes.
+     */
     public static getTypeBuffer(): ArrayBuffer {
         return new Uint32Array(TypeRegistry.indexToHash).buffer;
     }
 
+    /**
+     * Verifies that an external type buffer matches the internal registry order and content.
+     * @param typeBuffer - The external array buffer containing type hashes to validate.
+     * @throws {Error} If the hashes are out of chronological order or contain mismatched definitions.
+     */
     public static verifyTypeBuffer(typeBuffer: ArrayBuffer): void {
         const arrayEqual = (a: Uint32Array, b: Uint32Array) => a.length == b.length && a.every((v, i) => v == b[i]);
         const setEqual = (a: Uint32Array, b: Uint32Array) => a.length === b.length && ((m) => a.every(x => m.set(x, (m.get(x) || 0) + 1)) && b.every(x => m.get(x) && m.set(x, m.get(x) - 1)))(new Map());
@@ -86,25 +86,52 @@ export class TypeRegistry {
         }
     }
 
+    /**
+     * Resolves a registered type class constructor using its index-based type ID.
+     * @param index - The index ID associated with the class.
+     * @returns The matching shared type class constructor.
+     * @throws {Error} If no class definition matches the provided index.
+     */
     public static getTypeByIndex(index: number): SharedTypeClass {
         if(!this.indexToType.has(index)) throw new Error("cannot find type by index");
         return this.indexToType.get(index) as SharedTypeClass;
     }
 
+    /**
+     * Resolves a registered type class constructor using its computed FNV-1a hash.
+     * @param hash - The unsigned 32-bit hash value associated with the class.
+     * @returns The matching shared type class constructor.
+     * @throws {Error} If no class definition matches the provided hash.
+     */
     public static getTypeByHash(hash: number): SharedTypeClass {
         if(!this.hashToType.has(hash)) throw new Error("cannot find type by hash");
         return this.hashToType.get(hash) as SharedTypeClass;
     }
 
+    /**
+     * Resolves the numeric index-based type ID for a given type class constructor.
+     * @param type - The shared type class constructor to look up.
+     * @returns The registered index ID.
+     * @throws {Error} If the type class constructor has not been registered.
+     */
     public static getIndexByType(type: SharedTypeClass): number {
         if(!this.typeToIndex.has(type)) throw new Error("cannot find id by type");
         return this.typeToIndex.get(type) as number;
     }
 
+    /**
+     * Resolves the computed FNV-1a hash for a given type class constructor.
+     * @param type - The shared type class constructor to look up.
+     * @returns The registered hash value.
+     * @throws {Error} If the type class constructor has not been registered.
+     */
     public static getHashByType(type: SharedTypeClass): number {
         if(!this.typeToHash.has(type)) throw new Error("cannot find hash by index");
         return this.typeToHash.get(type) as number;
     }
 
+    /**
+     * Disallows instance creation since TypeRegistry is a fully static utility class.
+     */
     private constructor(){};
 }
