@@ -34,38 +34,48 @@ export class Mutex extends SharedInt32 {
         this.viewAddr = Math.floor(addr / 4);
     }
 
-    async lock(timeout?:number): Promise<void> {
+    async lock(timeout?: number): Promise<void> {
         //increase count
-        if(Atomics.load(this.view, this.viewAddr) == Mutex.threadID){
+        if (Atomics.load(this.view, this.viewAddr) == Mutex.threadID) {
             this.refCount++;
             return;
         }
 
-        while(true){
+        while (true) {
             //try to aquire lock
             let currValue = Atomics.compareExchange(this.view, this.viewAddr, Mutex.UNLOCKED, Mutex.threadID);
-            if(currValue === Mutex.UNLOCKED){
+            if (currValue === Mutex.UNLOCKED) {
                 this.refCount = 1;
                 return;
             }
 
             //wait until notif
             let tmp = Atomics.waitAsync(this.view, this.viewAddr, currValue, timeout);
-            if(tmp.async){
+            if (tmp.async) {
                 await tmp.value;
             }
         }
     }
     unlock() {
-        if(Atomics.load(this.view, this.viewAddr) != Mutex.threadID)throw Error("cannot free lock from other thread");
+        if (Atomics.load(this.view, this.viewAddr) != Mutex.threadID) throw Error("cannot free lock from other thread");
 
         this.refCount--;
 
-        if(this.refCount == 0){
+        if (this.refCount == 0) {
             Atomics.compareExchange(this.view, this.viewAddr, Mutex.threadID, Mutex.UNLOCKED);
 
             //notif
             Atomics.notify(this.view, Mutex.threadID, 1);
+        }
+    }
+    useLock(lmb: Function, timeout?: number) {
+        try {
+            this.lock(timeout);
+            lmb();
+        } catch (e) {
+            throw e;
+        } finally {
+            this.unlock();
         }
     }
 
@@ -74,7 +84,7 @@ export class Mutex extends SharedInt32 {
         throw new Error("cannot modify mutex values");
     }
 
-    get value(): int32{
+    get value(): int32 {
         return Atomics.load(this.view, this.viewAddr) as int32;
     }
 }
