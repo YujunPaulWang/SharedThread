@@ -3,6 +3,7 @@ import type { SharedPrimitiveStatic } from "../Memory/SharedPrimitive.js";
 import { SharedInt32, type int32 } from "../Memory/SharedInt32.js";
 
 import { threadId } from "node:worker_threads";
+import { TypeRegistry } from "../Memory/TypeRegistry.js";
 
 export class Mutex extends SharedInt32 {
     static readonly threadID: number = threadId;
@@ -68,7 +69,7 @@ export class Mutex extends SharedInt32 {
             Atomics.notify(this.view, Mutex.threadID, 1);
         }
     }
-    useLock(lmb: Function, timeout?: number) {
+    use(lmb: Function, timeout?: number) {
         try {
             this.lock(timeout);
             lmb();
@@ -89,3 +90,5 @@ export class Mutex extends SharedInt32 {
     }
 }
 Mutex satisfies SharedPrimitiveStatic<int32>;
+
+TypeRegistry.registerType(Mutex);
