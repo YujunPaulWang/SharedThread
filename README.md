@@ -100,7 +100,7 @@ startWorker().catch(console.error);
 import { WorkerThread } from "sharedthread";
 
 async function runWorker(){
-  // get the sharedheap(optional)
+  // sync the heap
   const myHeap = WorkerThread.syncHeap("myHeap");
 
   // sync to the int32 of the main thread
@@ -150,6 +150,9 @@ startWorker().catch(console.error);
 import { WorkerThread } from 'sharedthread';
 
 async function runWorker(){
+  // sync the heap
+  const myHeap = WorkerThread.syncHeap("myHeap");
+
   // sync to the array
   const myArray = await WorkerThread.syncVar("myArray");
 
@@ -220,8 +223,13 @@ startWorker().catch(console.error);
 #### `my-worker.ts`
 ```typescript
 import { WorkerThread } from 'sharedthread';
+//this import is required to load the custom type properly
+import { MyStruct } from "./my-types.js";
 
 async function runWorker(){
+  // sync the heap
+  const myHeap = WorkerThread.syncHeap("myHeap");
+  
   // sync to the array
   const myStruct = await WorkerThread.syncVar("myStruct");
 
