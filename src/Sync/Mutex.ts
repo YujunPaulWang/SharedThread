@@ -1,9 +1,10 @@
 import type { SharedHeap } from "../Memory/SharedHeap.js";
 import type { SharedPrimitiveStatic } from "../Memory/SharedPrimitive.js";
 import { SharedInt32, type int32 } from "../Memory/SharedInt32.js";
+import { TypeRegistry } from "../Memory/TypeRegistry.js";
 
 import { threadId } from "node:worker_threads";
-import { TypeRegistry } from "../Memory/TypeRegistry.js";
+
 
 export class Mutex extends SharedInt32 {
     static readonly threadID: number = threadId;
@@ -13,9 +14,9 @@ export class Mutex extends SharedInt32 {
 
 
     static fromData(heap: SharedHeap): Mutex {
-        let addr = heap.allocate(SharedInt32.byteSize, SharedInt32.typeID);
+        let addr = heap.allocate(Mutex.byteSize, Mutex.typeID);
         let obj = new Mutex(heap, addr);
-        obj.value = Mutex.UNLOCKED as int32;
+        Atomics.store(obj.view, obj.viewAddr, Mutex.UNLOCKED);
 
         return obj;
     }
