@@ -1,6 +1,6 @@
 {
     "name": "sharedthread",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "A high-performance asynchronous multithreading library that wraps Node.js Worker Threads and SharedArrayBuffer for efficient, zero-copy variable sharing.",
     "type": "module",
     "main": "./dist/index.cjs",
