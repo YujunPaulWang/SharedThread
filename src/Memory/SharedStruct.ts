@@ -23,7 +23,34 @@ export class SharedStruct extends SharedReference {
         this: (new (heap: SharedHeap, addr: number) => T) & SharedReferenceStatic, heap: SharedHeap, param: any
     ): T {
         let addr = heap.allocate(this.byteSize, this.typeID);
+
+        let pos = addr;
+        const prop = (this as unknown as typeof SharedStruct).properties;
+        for (let key in prop) {
+            let dataDeclaration: VariableDeclaration = prop[key] as VariableDeclaration;
+            let dataType = dataDeclaration.type as SharedTypeClass;
+            let param2: any = dataDeclaration.param;
+
+            if(SharedPrimitive.isPrototypeOf(dataType)){
+                if(dataType == SharedPointer){
+                    let tmp = new SharedPointer(heap, pos, param2?.type);
+                    if(param2?.addr != undefined)tmp.value = param2.addr;
+                }else{
+                    let tmp = new dataType(heap, pos);
+                    if(param2 != undefined)(tmp as SharedPrimitive<any>).value = param2;
+                }
+                pos += dataType.byteSize;
+            } else if (SharedReference.isPrototypeOf(dataType)) {
+                let tmp = dataType.fromData(heap, param2);
+                let p = new SharedPointer(heap, pos, dataType);
+                p.value = tmp.addr;
+                pos += SharedPointer.byteSize;
+            } else { throw new Error("invalid declaration"); }
+        }
+
         let obj = new this(heap, addr);
+
+
         obj.imprint(param);
         return obj;
     }
@@ -43,33 +70,20 @@ export class SharedStruct extends SharedReference {
         super(heap, addr);
 
         const prop = (this.constructor as typeof SharedStruct).properties;
-        for (let key in prop) {
+        let pos = this._addr;
+        for(let key in prop){
             let dataDeclaration: VariableDeclaration = prop[key] as VariableDeclaration;
-            let dataType = dataDeclaration.type as SharedTypeClass; // Fixed type resolution
-            let params: any = dataDeclaration.param;
-            let data: SharedType;
-            let propSize: number;
+            let dataType = dataDeclaration.type as SharedTypeClass;
 
-            if (SharedPrimitive.isPrototypeOf(dataType)) {
-                dataType = dataType as unknown as SharedPrimitiveClass<any>;
-                if(dataType == SharedPointer){
-                    data = new SharedPointer(heap, addr + this._byteSize, params.type);
-                    propSize = SharedPointer.byteSize;
-                }else{
-                    data = new dataType(heap, addr + this._byteSize);
-                    if (params !== undefined) (data as SharedPrimitive<any>).value = params;
-                    propSize = dataType.byteSize;
-                }
-            } else if ("type" in dataDeclaration && "param" in dataDeclaration) {
-                data = (dataDeclaration.type as SharedReferenceClass).fromData(heap, dataDeclaration.param);
-
-                let p = new SharedPointer(heap, addr + this._byteSize, dataDeclaration.type);
-                propSize = SharedPointer.byteSize;
-                p.value = data.addr;
-                data = p;
+            if(SharedPrimitive.isPrototypeOf(dataType)){
+                this.properties[key] = new dataType(this._heap, pos);
+                pos += dataType.byteSize;
+            }else if(SharedReference.isPrototypeOf(dataType)){
+                let tmp = new SharedPointer(this._heap, pos, dataType);
+                this.properties[key] = tmp;
+                tmp.value = tmp.value;
+                pos+= SharedPointer.byteSize;
             } else { throw new Error("invalid declaration"); }
-            this._byteSize += propSize;
-            this.properties[key] = data;
         }
 
         queueMicrotask(() => {
@@ -97,8 +111,8 @@ export class SharedStruct extends SharedReference {
         for (let key in obj) {
             if (key in this.properties) {
                 let ref: SharedType = this.properties[key] as SharedType;
-                if (ref instanceof SharedStruct) {
-                    ref.imprint(obj[key]);
+                if (ref instanceof SharedPointer) {
+                    ref.deref.imprint(obj[key]);
                 } else if (ref instanceof SharedPrimitive) {
                     (ref as SharedPrimitive<any>).value = obj[key];
                 }
