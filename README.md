@@ -211,7 +211,7 @@ async function startWorker(){
     foo: 6, // set the initial value of foo to 6
   });
   // array is a reference type so it needs to be dereferenced when on another reference type
-  myStruct.bar.deref[2] = 5;
+  myStruct.bar.deref[2].value = 5;
 
   // make the worker aware of the struct and wait for confirmation
   await thread.addVar(myStruct, "myStruct");
@@ -229,12 +229,12 @@ import { MyStruct } from "./my-types.js";
 async function runWorker(){
   // sync the heap
   const myHeap = WorkerThread.syncHeap("myHeap");
-  
+
   // sync to the array
   const myStruct = await WorkerThread.syncVar("myStruct");
 
   //read data from array
-  console.log(myStruct.foo); // outputs: 6
+  console.log(myStruct.foo.value); // outputs: 6
   console.log(myStruct.bar.deref[2].value); // outputs: 5
 }
 runWorker();
