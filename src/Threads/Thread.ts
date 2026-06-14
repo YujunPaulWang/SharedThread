@@ -32,8 +32,14 @@ interface WorkerMessageAllocate {
     rebound: boolean,
 }
 
+//a single signal
+interface WorkerMessageSignal {
+    tag: "signal",
+    label: string,
+}
 
-export type WorkerMessage = WorkerMessageData | WorkerMessageSync | WorkerMessageAllocate;
+
+export type WorkerMessage = WorkerMessageData | WorkerMessageSync | WorkerMessageAllocate | WorkerMessageSignal;
 
 export type ThreadEvent = {
     internalmessage: [WorkerMessage],
@@ -256,6 +262,25 @@ export abstract class Thread extends EventEmitter<ThreadEvent> {
         });
     }
 
+    public signal(label: string | null = null): void {
+        this.port.postMessage({
+            tag: "signal",
+            label,
+        });
+    }
+
+    public async waitFor(label: string | null = null) {
+        return new Promise<void>((res) => {
+            const handler = (label2: string) => {
+                if (label == label2) {
+                    res();
+                    this.off("signal", handler);
+                }
+            }
+            this.on("signal", handler);
+        });
+    }
+
     /**
      * Adds a shared memory heap to the thread and waits for confirmation.
      * @param heap The SharedHeap or SharedArrayBuffer instance to share.
@@ -369,11 +394,11 @@ export abstract class Thread extends EventEmitter<ThreadEvent> {
                     let dataType: SharedTypeClass = TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr));
                     let data: SharedType;
 
-                    if(isArr){
+                    if (isArr) {
                         data = new SharedArray(heap, addr);
-                    }else if(isPtr){
+                    } else if (isPtr) {
                         data = new SharedPointer(heap, addr);
-                    }else{
+                    } else {
                         data = new dataType(heap, addr);
                     }
 

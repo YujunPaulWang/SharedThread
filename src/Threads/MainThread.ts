@@ -84,6 +84,10 @@ export class MainThread extends Thread {
                     this.emit("assign", msg.name, msg.heapID, msg.addr, msg.rebound);
                     //todo
                     break;
+                case "signal":
+                    this.emit("signal", msg.label);
+                    //todo
+                    break;
             }
 
             if (this.config.transient) {
