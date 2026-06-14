@@ -129,6 +129,9 @@ export class MainThread extends Thread {
             this.port.once("online", () => {
                 res();
             });
+            if(this.active){
+                res();
+            }
         });
     }
 

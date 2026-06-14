@@ -13,9 +13,9 @@ export class WorkerThread extends Thread {
      */
     constructor() {
         if (parentPort == null) throw new Error("cannot find parent port");
-        super(parentPort as PortHandle, workerData.config);
+        super(parentPort as PortHandle, workerData.orig.config);
 
-        this._workerData = workerData.default;
+        this._workerData = workerData.orig.default;
         queueMicrotask(() => {
             TypeRegistry.verifyTypeBuffer(workerData.types);
         });
