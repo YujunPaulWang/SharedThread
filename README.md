@@ -78,6 +78,10 @@ import { MainThread, SharedHeap, SharedInt32 } from "sharedthread";
 async function startWorker(){
   // create worker
   const thread = new MainThread("./my-worker.js");
+  thread.on("error", console.error);
+
+  //wait for worker to setup
+  thread.waitFor("worker setup");
 
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
@@ -88,6 +92,12 @@ async function startWorker(){
 
   // make the worker aware of the int32 and wait for confirmation
   await thread.addVar(myInt32, "myInt32");
+
+  //change value
+    myInt32.value = 25;
+
+  //tell the worker that the value was modified
+  thread.signal("modify value");
 
 
 }
@@ -100,12 +110,19 @@ import { WorkerThread } from "sharedthread";
 
 async function runWorker(){
   // sync the heap
-  const myHeap = WorkerThread.syncHeap("myHeap");
+  const myHeap = await WorkerThread.syncHeap("myHeap");
 
   // sync to the int32 of the main thread
   const myInt32 = await WorkerThread.syncVar("myInt32");
 
-  console.log(myInt32.value); // outputs: 10
+  //tell main thread that setup is done
+  WorkerThread.signal("worker setup");
+
+  //wait for the value to be mofified
+  await WorkerThread.waitFor("modify value");
+
+
+  console.log(myInt32.value); // outputs: 25
 }
 runWorker();
 ```

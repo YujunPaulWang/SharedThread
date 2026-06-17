@@ -65,7 +65,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
         let obj = new this(heap, addr) as any;
 
         if (v.array) {
-            for (let i = 0; i < length; i++) {
+            for (let i = 0; i < Math.min(length, v.array.length); i++) {
                 obj.elements[i].value = v.array[i];
             }
         }
