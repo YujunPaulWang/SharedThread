@@ -33,7 +33,6 @@ console.log(`Optimal Threads: ${MainThread.optimalThreads}`);
 
 async function startWorker() {
   const thread = new MainThread("./my-worker.ts", {
-    useTypescript: true,
     timeout: 5000, // messaging timeout for functions that expect responses
     workerOptions: { // any data you sent here can be accessed from the worker immediately
       workerData: { initialPayload: "Custom Meta Data" }
