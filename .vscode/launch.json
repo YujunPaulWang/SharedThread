@@ -8,6 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Debug Current File",
+            "runtimeArgs": ["--import", "tsx"],
             "skipFiles": [
                 "<node_internals>/**"
             ],

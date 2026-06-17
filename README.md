@@ -22,9 +22,9 @@ npm install sharedthread
 
 ### 1. External Worker File (Recommended)
 
-Isolate your worker execution logic in a dedicated file. Enabling `useTypescript` auto-configures Node to run `.ts` files directly using `--import tsx` under the hood.
+Isolate your worker execution logic in a dedicated file. Enabling `useTypescript` auto-configures Node to run `.js` files directly using `--import tsx` under the hood.
 
-#### `main.ts`
+#### `main.js`
 ```typescript
 import { MainThread } from 'sharedthread';
 
@@ -32,7 +32,7 @@ import { MainThread } from 'sharedthread';
 console.log(`Optimal Threads: ${MainThread.optimalThreads}`); 
 
 async function startWorker() {
-  const thread = new MainThread("./my-worker.ts", {
+  const thread = new MainThread("./my-worker.js", {
     timeout: 5000, // messaging timeout for functions that expect responses
     workerOptions: { // any data you sent here can be accessed from the worker immediately
       workerData: { initialPayload: "Custom Meta Data" }
@@ -56,7 +56,7 @@ async function startWorker() {
 startWorker().catch(console.error);
 ```
 
-#### `my-worker.ts`
+#### `my-worker.js`
 ```typescript
 import { WorkerThread } from 'sharedthread';
 
@@ -71,13 +71,13 @@ WorkerThread.on('message', (data, label) => {
 
 A `SharedHeap` instance acts as a memory manager allowing for shared variables across threads.
 
-#### `main.ts`
+#### `main.js`
 ```typescript
 import { MainThread, SharedHeap, SharedInt32 } from "sharedthread";
 
 async function startWorker(){
   // create worker
-  const thread = new MainThread("./my-worker.ts");
+  const thread = new MainThread("./my-worker.js");
 
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
@@ -94,7 +94,7 @@ async function startWorker(){
 startWorker().catch(console.error);
 ```
 
-#### `my-worker.ts`
+#### `my-worker.js`
 ```typescript
 import { WorkerThread } from "sharedthread";
 
@@ -114,13 +114,13 @@ runWorker();
 
 A `SharedArray` is a array of a fixed size that can be accessed across workers.
 
-#### `main.ts`
+#### `main.js`
 ```typescript
 import { MainThread, SharedHeap, SharedArray, SharedInt32 } from "sharedthread";
 
 async function startWorker(){
   // create worker
-  const thread = new MainThread("./my-worker.ts");
+  const thread = new MainThread("./my-worker.js");
 
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
@@ -144,7 +144,7 @@ async function startWorker(){
 startWorker().catch(console.error);
 ```
 
-#### `my-worker.ts`
+#### `my-worker.js`
 ```typescript
 import { WorkerThread } from 'sharedthread';
 
@@ -166,7 +166,7 @@ runWorker();
 
 Any class that extends SharedStruct can act as a shared struct.
 
-#### `my-types.ts`
+#### `my-types.js`
 ```typescript
 import { TypeRegistry, SharedStruct, SharedArray, SharedInt32 } from "sharedthread";
 
@@ -192,14 +192,14 @@ struct MyStruct{
 TypeRegistry.registerType(MyStruct);
 ```
 
-#### `main.ts`
+#### `main.js`
 ```typescript
 import { MainThread, SharedHeap } from "sharedthread";
 import { MyStruct } from "./my-types.js";
 
 async function startWorker(){
   // create worker
-  const thread = new MainThread("./my-worker.ts");
+  const thread = new MainThread("./my-worker.js");
 
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
@@ -219,7 +219,7 @@ async function startWorker(){
 startWorker().catch(console.error);
 ```
 
-#### `my-worker.ts`
+#### `my-worker.js`
 ```typescript
 import { WorkerThread } from 'sharedthread';
 //this import is required to load the custom type properly
