@@ -79,9 +79,7 @@ async function startWorker(){
   // create worker
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
-
-  //wait for worker to setup(prevents rare race conditions)
-  await thread.waitFor("worker setup");
+  await thread.ready();
 
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
@@ -110,17 +108,10 @@ import { WorkerThread } from "sharedthread";
 
 async function runWorker(){
   // sync the heap
-  const promisedHeap = WorkerThread.syncHeap("myHeap");
+  await WorkerThread.syncHeap("myHeap");
 
   // sync to the int32 of the main thread
-  const promisedInt32 = WorkerThread.syncVar("myInt32");
-
-  //tell main thread that setup is done
-  WorkerThread.signal("worker setup");
-
-  await promisedHeap;
-
-  const myInt32 = await promisedInt32;
+  const myInt32 = await WorkerThread.syncVar("myInt32");
 
   //wait for the value to be mofified
   await WorkerThread.waitFor("modify value");
@@ -143,7 +134,7 @@ async function startWorker(){
   // create worker
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
-  await thread.waitFor("worker setup");
+  await thread.ready();
 
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
@@ -175,16 +166,10 @@ startWorker().catch(console.error);
 ```typescript
 async function runWorker(){
   // sync the heap
-  const promisedHeap = WorkerThread.syncHeap("myHeap");
+  await WorkerThread.syncHeap("myHeap");
 
-  // sync to the array(and get the promise);
-  const promisedArray = WorkerThread.syncVar("myArray");
-
-  WorkerThread.signal("worker setup");
-
-  await promisedHeap;
-
-  const myArray = await promisedArray;
+  // sync to the array
+  const myArray = await WorkerThread.syncVar("myArray");
 
   //read value before modification
   console.log(myArray[0].value); //outputs: 3
@@ -241,8 +226,6 @@ async function startWorker(){
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
 
-  thread.waitFor("worker setup");
-
   // create and add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
   thread.addHeap(myHeap, "myHeap");
@@ -269,16 +252,10 @@ import { MyStruct } from "./my-types.js";
 
 async function runWorker(){
   // sync the heap
-  const promisedHeap = WorkerThread.syncHeap("myHeap");
+  await WorkerThread.syncHeap("myHeap");
 
   // sync to the array
-  const promisedStruct = WorkerThread.syncVar("myStruct");
-
-  WorkerThread.signal("worker setup");
-
-  await promisedHeap;
-
-  const myStruct = await promisedStruct;
+  const myStruct = await WorkerThread.syncVar("myStruct");
 
   //read data from array
   console.log(myStruct.foo.value); // outputs: 6

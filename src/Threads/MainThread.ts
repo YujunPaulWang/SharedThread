@@ -69,24 +69,40 @@ export class MainThread extends Thread {
         this.worker = worker;
 
         //set up event handlers
-        this.port.on("message", (msg: WorkerMessage) => {
+        this.port.on("message", async (msg: WorkerMessage) => {
+            const delay = (t: number) => new Promise(res => setTimeout(res, t));
             this.emit("internalmessage", msg);
+            let c = 0;
             switch (msg.tag) {
                 case "message":
                     this.emit("message", msg.data, msg.label);
-                    //todo
                     break;
                 case "sync":
-                    this.emit("sync", msg.name, msg.buffer, msg.heapID, msg.rebound);
-                    //todo
+                    while(!this.emit("sync", msg.name, msg.buffer, msg.heapID, msg.rebound)){
+                        await delay(5);
+                        if(c++ > 100){
+                            console.warn("unmatched syncHeap/addHeap");
+                            break;
+                        }
+                    }
                     break;
                 case "assign":
-                    this.emit("assign", msg.name, msg.heapID, msg.addr, msg.rebound);
-                    //todo
+                    while(!this.emit("assign", msg.name, msg.heapID, msg.addr, msg.rebound)){
+                        await delay(5);
+                        if(c++ > 100){
+                            console.warn("unmatched syncVar/addVar");
+                            break;
+                        }
+                    }
                     break;
                 case "signal":
-                    this.emit("signal", msg.label);
-                    //todo
+                    while(!this.emit("signal", msg.label)){
+                        await delay(10);
+                        if(c++ > 100){
+                            console.warn("unmatched waitFor/signal");
+                            break;
+                        }
+                    }
                     break;
             }
 
