@@ -22,13 +22,18 @@ export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
     public static fromData(heap: SharedHeap, v: PointerDefinition) {
         let addr = heap.allocate(SharedPointer.byteSize, v.type.typeID, SharedPointer.isPtr);
         let obj = new SharedPointer(heap, addr);
-        if (v.addr) obj.value = addr;
+        if (v.addr != undefined){
+            obj.value = v.addr;
+        }else{
+            obj.heap.view.setInt32(obj.addr, -1);
+        }
 
         return obj;
     }
 
     protected readonly _heldType: SharedTypeClass;
     protected _deref: SharedType | null = null;
+    private lastAddr: number = -1;
 
     /**
      * Creates an instance of SharedPointer.
@@ -40,6 +45,7 @@ export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
         super(heap, addr);
 
         this._heldType = dataType ?? (TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr)));
+        this.deref;
     }
 
     /**
@@ -79,6 +85,7 @@ export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
             if (this._heldType != (TypeRegistry.getTypeByIndex(this._heap.getTypeIDAt(this._addr)))) throw new Error("pointer points to wrong type");
         }
         this._deref = new this._heldType(this._heap, p);
+        this.lastAddr = p;
     }
 
     /**
@@ -97,6 +104,7 @@ export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
     set deref(v: T) {
         if (!(v instanceof this._heldType)) throw new Error("assigned wrong type to pointer");
         this.value = v.addr;
+        this.lastAddr = v.addr;
         this._deref = v;
     }
 
@@ -105,6 +113,11 @@ export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
      * @returns The referenced object instance.
      */
     get deref(): T {
+        let addr = this._heap.view.getInt32(this._addr);
+        if(addr != this.lastAddr){
+            this.deref = new this._heldType(this._heap, addr) as unknown as T;
+            this.lastAddr = addr;
+        }
         return this._deref as T;
     }
 }

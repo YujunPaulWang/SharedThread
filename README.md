@@ -1,6 +1,7 @@
 # SharedThread
 
-[![v1.0.1](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
+[![v1.0.8](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
+
 
 A high-performance asynchronous multithreading library that wraps Node.js Worker Threads and SharedArrayBuffer for efficient, zero-copy variable sharing.
 
@@ -20,9 +21,9 @@ npm install sharedthread
 ## Usage
 
 
-### 1. External Worker File (Recommended)
+### External Worker File (Recommended)
 
-Isolate your worker execution logic in a dedicated file. Enabling `useTypescript` auto-configures Node to run `.js` files directly using `--import tsx` under the hood.
+Create a new instance using `new MainThread(filepath)`.
 
 #### `main.js`
 ```typescript
@@ -66,8 +67,35 @@ WorkerThread.on('message', (data, label) => {
   console.log(`Received message with label [${label}]:`, data);
 });
 ```
+### Same File Worker
 
-### 2. Variable Sharing
+In CommonJS(require syntax), `__filename` is the current file.
+In ES Modules(import syntax), `import.meta.filename` is is the current file;
+
+#### `main.js`
+```typescript
+import { MainThread, WorkerThread, isMainThread } from 'sharedthread';
+
+if(isMainThread){
+  startWorker().catch(console.error);
+}else{
+  workerFunction().catch(console.error);
+}
+
+async function startWorker() {
+  const thread = new MainThread(import.meta.filename);
+
+  //do stuff for main thread
+  console.log("main code");
+}
+
+async function workerFunction(){
+  //do stuff in worker
+  console.log("worker code")
+}
+```
+
+### Variable Sharing
 
 A `SharedHeap` instance acts as a memory manager allowing for shared variables across threads.
 
@@ -122,7 +150,7 @@ async function runWorker(){
 runWorker();
 ```
 
-### 3. Shared Array
+### Shared Array
 
 A `SharedArray` is a array of a fixed size that can be accessed across workers.
 
@@ -186,9 +214,9 @@ async function runWorker(){
 runWorker();
 ```
 
-### 4. Custom Struct
+### Custom Struct
 
-Any class that extends SharedStruct can act as a shared struct.
+Any class that extends SharedStruct can act as a shared struct. Structs automatically convert reference types to pointers to that reference type.
 
 #### `my-types.js`
 ```typescript
@@ -260,6 +288,68 @@ async function runWorker(){
   //read data from array
   console.log(myStruct.foo.value); // outputs: 6
   console.log(myStruct.bar.deref[2].value); // outputs: 5
+}
+runWorker();
+```
+
+### Pointers
+
+Pointers can point to any shared primitive or reference variable in the **same** heap. 
+
+#### `main.js`
+```typescript
+import { MainThread, SharedHeap, SharedFloat64, SharedPointer } from "sharedthread";
+
+async function startWorker(){
+  // create worker
+  const thread = new MainThread("./my-worker.js");
+  thread.on("error", console.error);
+
+  // create and add heap with 1000 bytes to worker thread
+  const myHeap = new SharedHeap(1000);
+  thread.addHeap(myHeap, "myHeap");
+
+  //create a float64(equivalent to js number) and a pointer
+  let myFloat64 = SharedFloat64.fromData(myHeap, Math.PI);
+  let myPointer = SharedPointer.fromData(myHeap, {
+    type: SharedFloat64,
+    //optionally add the initial address it points to
+    addr: myFloat64.addr
+  });
+
+  //because the float64 is indirectly referenced, it doesn't need to be synced
+  await thread.addVar(myPointer, "myPointer");
+
+  //wait for the worker thread
+  await thread.waitFor("pointer modified");
+
+  //read the new number
+  console.log(myPointer.deref.value);//outputs: 2.718281828459045(Math.E)
+
+}
+startWorker().catch(console.error);
+```
+
+#### `my-worker.js`
+```typescript
+import { SharedFloat64, WorkerThread } from 'sharedthread';
+
+async function runWorker(){
+  // sync the heap
+  let heap = await WorkerThread.syncHeap("myHeap");
+
+  //only the pointer needs to be synced
+  let myPointer = await WorkerThread.syncVar("myPointer");
+
+  console.log(myPointer.heldType);// outputs: Class SharedFloat64{...}
+  console.log(myPointer.deref.value);// outputs: 3.141592653589793(Math.PI)
+
+  //add a different float32 to the pointer(has to bee same type as before and same heap as pointer)
+  let myNewFloat64 = SharedFloat64.fromData(heap, Math.E);
+  myPointer.deref = myNewFloat64;
+
+  //tell the main thread the pointer has been modified
+  WorkerThread.signal("pointer modified");
 }
 runWorker();
 ```
