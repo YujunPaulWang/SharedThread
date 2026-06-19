@@ -109,7 +109,7 @@ async function startWorker(){
   thread.on("error", console.error);
   await thread.ready();
 
-  // create and add heap with 1000 bytes to worker thread
+  // create an add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
   thread.addHeap(myHeap, "myHeap");
 
@@ -164,7 +164,7 @@ async function startWorker(){
   thread.on("error", console.error);
   await thread.ready();
 
-  // create and add heap with 1000 bytes to worker thread
+  // create an add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
   thread.addHeap(myHeap, "myHeap");
 
@@ -254,7 +254,7 @@ async function startWorker(){
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
 
-  // create and add heap with 1000 bytes to worker thread
+  // create an add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
   thread.addHeap(myHeap, "myHeap");
 
@@ -305,7 +305,7 @@ async function startWorker(){
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
 
-  // create and add heap with 1000 bytes to worker thread
+  // create an add heap with 1000 bytes to worker thread
   const myHeap = new SharedHeap(1000);
   thread.addHeap(myHeap, "myHeap");
 
