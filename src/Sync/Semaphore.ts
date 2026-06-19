@@ -61,10 +61,10 @@ export class Semaphore extends SharedInt32 {
         Atomics.notify(this.view, this.viewAddr, 1);
     }
 
-    use(lmb: Function, timeout?: number) {
+    async use(lmb: Function, timeout?: number) : Promise<void> {
         try {
-            this.acquire(timeout);
-            lmb();
+            await this.acquire(timeout);
+            return await lmb();
         } catch (e) {
             throw e;
         } finally {

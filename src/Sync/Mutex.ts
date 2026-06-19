@@ -70,10 +70,10 @@ export class Mutex extends SharedInt32 {
             Atomics.notify(this.view, Mutex.threadID, 1);
         }
     }
-    use(lmb: Function, timeout?: number) {
+    async use(lmb: (...args: any[]) => Promise<any>, timeout?: number) : Promise<any> {
         try {
-            this.lock(timeout);
-            lmb();
+            await this.lock(timeout);
+            return await lmb();
         } catch (e) {
             throw e;
         } finally {
