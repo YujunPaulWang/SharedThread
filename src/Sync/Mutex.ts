@@ -10,7 +10,7 @@ export class Mutex extends SharedInt32 {
     static readonly threadID: number = threadId;
     static readonly UNLOCKED: number = -1;
 
-    static readonly atomicViews: Int32Array[];
+    static readonly atomicViews: Int32Array[] = [];
 
 
     static fromData(heap: SharedHeap): Mutex {
@@ -67,7 +67,7 @@ export class Mutex extends SharedInt32 {
             Atomics.compareExchange(this.view, this.viewAddr, Mutex.threadID, Mutex.UNLOCKED);
 
             //notif
-            Atomics.notify(this.view, Mutex.threadID, 1);
+            Atomics.notify(this.view, this.viewAddr, 1);
         }
     }
     async use(lmb: (...args: any[]) => Promise<any>, timeout?: number) : Promise<any> {

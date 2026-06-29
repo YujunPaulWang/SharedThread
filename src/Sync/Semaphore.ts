@@ -10,7 +10,7 @@ export class Semaphore extends SharedInt32 {
     static readonly threadID: number = threadId;
     static readonly UNLOCKED: number = -1;
 
-    static readonly atomicViews: Int32Array[];
+    static readonly atomicViews: Int32Array[] = [];
 
 
     static fromData(heap: SharedHeap, maxRes: int32): Semaphore {

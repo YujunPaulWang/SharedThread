@@ -1,6 +1,6 @@
 # SharedThread
 
-[![v1.0.8](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
+[![v1.1.0](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
 
 
 A high-performance asynchronous multithreading library that wraps Node.js Worker Threads and SharedArrayBuffer for efficient, zero-copy variable sharing.
@@ -350,6 +350,76 @@ async function runWorker(){
 
   //tell the main thread the pointer has been modified
   WorkerThread.signal("pointer modified");
+}
+runWorker();
+```
+
+### Mutex
+
+A mutex can restrict access to a variable so only one thread has access at a time, preventing data corruption.
+
+#### `main.js`
+```typescript
+import { MainThread, Mutex, SharedHeap, SharedInt32 } from "sharedthread";
+
+async function startWorker(){
+  //create heap
+  const myHeap = new SharedHeap(1000);
+
+  //create int32 and mutex
+  const myMutex = Mutex.fromData(myHeap);
+  const myInt32 = SharedInt32.fromData(myHeap, 0); 
+
+
+  // create 4 workers
+  const threads = [];
+  for(let i = 0; i < 4; i++){
+    let thread = new MainThread("./my-worker.js");
+    thread.on("error", console.error);
+
+    threads.push(thread);
+  }
+
+  //setup promise for everything finishing
+  let completionPromises = Promise.all(threads.map(t => t.waitFor("done")));
+  
+  //sync heap, mutex, int32
+  for(let thread of threads){
+    thread.addHeap(myHeap, "myHeap");
+    thread.addVar(myMutex, "myMutex");
+    thread.addVar(myInt32, "myInt32");
+  }
+
+  //wait for all threads to finish adding
+  await completionPromises;
+
+  console.log(myInt32.value);//outputs: 400
+
+  //terminate all threads
+  threads.forEach(t => t.terminate());
+}
+startWorker().catch(console.error);
+```
+
+#### `my-worker.js`
+```typescript
+import { WorkerThread } from 'sharedthread';
+
+async function runWorker(){
+  // sync the heap
+  let heap = await WorkerThread.syncHeap("myHeap");
+
+  //sync the int and mutex
+  let myMutex = await WorkerThread.syncVar("myMutex");
+  let myInt32 = await WorkerThread.syncVar("myInt32");
+
+  for(let i = 0; i < 100; i++){
+    await myMutex.use(() => {
+        myInt32.value += 1;
+    });
+  }
+
+  WorkerThread.signal("done");
 }
 runWorker();
 ```
