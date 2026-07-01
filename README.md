@@ -414,9 +414,16 @@ async function runWorker(){
   let myInt32 = await WorkerThread.syncVar("myInt32");
 
   for(let i = 0; i < 100; i++){
+    //enter critical section using mutex
     await myMutex.use(() => {
         myInt32.value += 1;
     });
+    //alternative syntax
+    /*
+    await myMutex.lock();
+    myInt32.value += 1;
+    myMutex.unlock();
+    */
   }
 
   WorkerThread.signal("done");
