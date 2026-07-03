@@ -192,6 +192,8 @@ startWorker().catch(console.error);
 
 #### `my-worker.js`
 ```typescript
+import { WorkerThread } from "sharedthread";
+
 async function runWorker(){
   // sync the heap
   await WorkerThread.syncHeap("myHeap");
