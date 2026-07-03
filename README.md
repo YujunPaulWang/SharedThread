@@ -178,6 +178,7 @@ async function startWorker(){
 
   // make the worker aware of the array and wait for confirmation
   await thread.addVar(myArray, "myArray");
+  await thread.waitFor("finished reading");
 
   //subtract 5 from every value
   for(let i = 0; i < 3; i++){
@@ -206,6 +207,7 @@ async function runWorker(){
   console.log(myArray[1].value); //outputs: 8
   console.log(myArray[2].value); //outputs: 4
 
+  WorkerThread.signal("finished reading");
   await WorkerThread.waitFor("modify value");
 
   //read data from array after modification
