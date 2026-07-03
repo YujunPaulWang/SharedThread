@@ -10,3 +10,7 @@ dist/
 
 #vscode config
 .vscode
+
+#other
+run/
+todo.txt
