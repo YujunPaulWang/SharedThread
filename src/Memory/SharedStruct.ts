@@ -12,6 +12,10 @@ export type VariableDeclaration = {
     param: any,
 };
 
+export interface SharedStruct{
+    [index: string]: any;
+}
+
 export class SharedStruct extends SharedReference {
     /**
      * Allocates memory on the shared heap and creates an instantiated struct populated with initial data.
