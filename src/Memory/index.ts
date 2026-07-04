@@ -8,6 +8,7 @@ export type { SharedTypeClass } from "./SharedType.js";
 export * from "./SharedHeap.js";
 
 export * from "./SharedArray.js";
+export * from "./SharedArrayList.js";
 export * from "./SharedPointer.js";
 
 

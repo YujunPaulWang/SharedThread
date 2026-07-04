@@ -22,6 +22,11 @@ export abstract class SharedType {
     get heap(): SharedHeap {
         return this._heap;
     }
+    [Symbol.toPrimitive](hint: string){
+        if(hint == "number"){
+            throw new Error("cannot convet to number(try calling .value)");
+        }
+    }
 }
 
 export type SharedTypeClass = SharedReferenceClass | SharedPrimitiveClass<any>;

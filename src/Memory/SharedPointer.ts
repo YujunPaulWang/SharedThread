@@ -45,7 +45,7 @@ export class SharedPointer<T extends SharedType> extends SharedPrimitive<any> {
         super(heap, addr);
 
         this._heldType = dataType ?? (TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr)));
-        this.deref;
+        //this.deref;
     }
 
     /**

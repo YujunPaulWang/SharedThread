@@ -49,7 +49,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
         this: (new (heap: SharedHeap, addr: number) => U) & SharedReferenceStatic,
         heap: SharedHeap,
         v: ArrayDefinition
-    ): U {
+    ): SharedArray<any> {
         let length = v.length;
         let type = v.type;
         if (type.prototype instanceof SharedPrimitive) {
@@ -70,7 +70,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
             }
         }
 
-        return obj as U;
+        return obj;
     }
 
 
@@ -106,7 +106,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
 
 
         return new Proxy(this, {
-            get(target: SharedArray<T>, prop: any, receiver: typeof Proxy) {
+            get(target: SharedArray<T>, prop: string, receiver: typeof Proxy) {
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {
@@ -116,7 +116,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
 
                 return Reflect.get(target, prop, receiver);
             },
-            set(target, prop, value, receiver) {
+            set(target: SharedArray<T>, prop: string, value: any, receiver: typeof Proxy) {
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {

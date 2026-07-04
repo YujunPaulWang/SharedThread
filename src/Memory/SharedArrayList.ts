@@ -1,0 +1,133 @@
+import { SharedArray } from "./SharedArray.js";
+import type { SharedHeap } from "./SharedHeap.js";
+import { SharedPointer } from "./SharedPointer.js";
+import { SharedReference, type SharedReferenceStatic } from "./SharedReference.js";
+import { SharedStruct, type VariableDeclaration } from "./SharedStruct.js";
+import type { SharedType, SharedTypeClass } from "./SharedType.js";
+import { SharedUint32 } from "./SharedUint32.js";
+import { TypeRegistry } from "./TypeRegistry.js";
+
+
+interface ArrayDefinition {
+    type: SharedTypeClass,
+    length?: number,
+    array?: any[],
+}
+
+export interface SharedArrayList<T extends SharedType> {
+    [index: number]: T;
+}
+
+export class SharedArrayList<T extends SharedType> extends SharedStruct {
+
+    public static readonly INIT_SIZE = 10;
+    public static readonly EXPANSION_FACTOR = 1.5;
+
+    public static readonly properties: Record<string, VariableDeclaration> = {
+        _length: { type: SharedUint32 },
+        internalLength: { type: SharedUint32 },
+        arrayPtr: {
+            type: SharedPointer, param: {
+                type: SharedArray
+            }
+        },
+    }
+
+    /**
+     * Overload for initializing a SharedReference wrapper from generic data.
+     * 
+     * @template U The expected return reference type.
+     * @param heap The shared heap instantiation target.
+     * @param v Generic input payload.
+     * @returns A fresh reference instance.
+     */
+    static fromData<U extends SharedReference>(heap: SharedHeap, v: any): U;
+
+    /**
+     * Allocates memory on the heap and creates a SharedArrayList from an array definition.
+     * Populates initial values if provided in the definition payload.
+     * 
+     * @template U The expected return reference type.
+     * @this The constructor context bound to a SharedReference class type.
+     * @param heap The target shared heap layout.
+     * @param v Configuration detailing item layout, element type, optional length, and optional initial array values.
+     * @returns A newly allocated SharedArrayList instance.
+     */
+    static fromData<U extends SharedReference>(
+        this: (new (heap: SharedHeap, addr: number) => U) & SharedReferenceStatic,
+        heap: SharedHeap,
+        v: ArrayDefinition
+    ): SharedArrayList<any> {
+        let length = Math.max(v?.length ?? 0, v?.array?.length ?? 0, 0) ?? SharedArrayList.INIT_SIZE;
+
+        let obj = super.fromData(heap, {}) as SharedStruct;
+
+        let array = SharedArray.fromData(heap, {
+            type: v.type,
+            length,
+            array: v.array,
+        });
+
+        obj._length.value = length;
+        obj.internalLength.value = length;
+        obj.arrayPtr.deref = array;
+
+        return obj as SharedArrayList<any>;
+    }
+
+
+    constructor(heap: SharedHeap, addr: number) {
+        const parent = super(heap, addr) as any;
+
+        return new Proxy(this, {
+            get(target: SharedArrayList<T>, prop: string, receiver: typeof Proxy) {
+                let n = Number(prop);
+                if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0) {
+                    if (n >= target.length) {
+                        target.length = n + 1;
+                    }
+                    return target.arrayPtr.deref[n];
+                }
+                return Reflect.get(parent, prop, receiver);
+            },
+            set(target: SharedArrayList<T>, prop: string, value: any, receiver: typeof Proxy) {
+                let n = Number(prop);
+                if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0) {
+                    if (n >= target.length) {
+                        target.length = n + 1;
+                    }
+                    target.arrayPtr.deref[n] = value;
+                    return true;
+                }
+
+                return Reflect.set(parent, prop, value, receiver);
+            }
+        });
+    }
+    get length(): number {
+        return this._length.value;
+    }
+    set length(n: number) {
+        if (n >= this.length && n >= this.internalLength.value) {
+            let oldArray = this.arrayPtr.deref;
+            let newLen = Math.max(1, this.internalLength.value);
+            while(newLen < n){
+                newLen = newLen * SharedArrayList.EXPANSION_FACTOR;
+            }
+            let newArray = SharedArray.fromData(this._heap, {
+                type: oldArray.elementType,
+                length: newLen,
+                //array: oldArray,
+            }) as SharedArray<any>;
+            for (let i = 0; i < oldArray.length; i++) {
+                newArray[i].value = oldArray[i].value;
+            }
+
+            this.internalLength.value = newArray.length;
+            this._heap.free(oldArray.addr);
+            this.arrayPtr.deref = newArray;
+        }
+        this._length.value = n;
+    }
+}
+TypeRegistry.registerType(SharedArrayList);

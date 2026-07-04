@@ -76,11 +76,18 @@ export class SharedStruct extends SharedReference {
         const prop = (this.constructor as typeof SharedStruct).properties;
         let pos = this._addr;
         for(let key in prop){
+            if(key in this){
+                console.warn("class properties cannot overlap with declared properties");
+            }
             let dataDeclaration: VariableDeclaration = prop[key] as VariableDeclaration;
             let dataType = dataDeclaration.type as SharedTypeClass;
 
             if(SharedPrimitive.isPrototypeOf(dataType)){
-                this.properties[key] = new dataType(this._heap, pos);
+                if(dataType == SharedPointer){
+                    this.properties[key] = new SharedPointer(this._heap, pos, dataDeclaration.param.type);
+                }else{
+                    this.properties[key] = new dataType(this._heap, pos);
+                }
                 pos += dataType.byteSize;
             }else if(SharedReference.isPrototypeOf(dataType)){
                 let tmp = new SharedPointer(this._heap, pos, dataType);
