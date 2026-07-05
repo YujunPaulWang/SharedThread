@@ -153,6 +153,7 @@ runWorker();
 ### Shared Array
 
 A `SharedArray` is a array of a fixed size that can be accessed across workers.
+For a resizable array use SharedArrayList instead.
 
 #### `main.js`
 ```typescript
