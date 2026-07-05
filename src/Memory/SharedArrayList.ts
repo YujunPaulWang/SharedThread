@@ -129,5 +129,17 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
         }
         this._length.value = n;
     }
+
+    /**
+     * Creates an iterator that yields elements of the array.
+     * 
+     * @generator
+     */
+    *[Symbol.iterator](){
+        let array = this.arrayPtr.deref as SharedArray<any>;
+        for(let i = 0; i < this._length; i++){
+            yield array[i];
+        }
+    }
 }
 TypeRegistry.registerType(SharedArrayList);

@@ -159,5 +159,16 @@ export class SharedArray<T extends SharedType> extends SharedReference {
     get length(): number {
         return this._length;
     }
+
+    /**
+     * Creates an iterator that yields elements of the array.
+     * 
+     * @generator
+     */
+    *[Symbol.iterator](){
+        for(let i = 0; i < this._length; i++){
+            yield this.elements[i];
+        }
+    }
 }
 SharedArray satisfies SharedReferenceStatic;
