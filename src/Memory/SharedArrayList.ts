@@ -80,7 +80,8 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
         const parent = super(heap, addr) as any;
 
         return new Proxy(this, {
-            get(target: SharedArrayList<T>, prop: string, receiver: typeof Proxy) {
+            get(target: SharedArrayList<T>, prop: string | Symbol, receiver: typeof Proxy) {
+                if (typeof prop == "symbol") return Reflect.get(parent, prop, receiver);
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0) {
                     if (n >= target.length) {
@@ -88,9 +89,10 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
                     }
                     return target.arrayPtr.deref[n];
                 }
-                return Reflect.get(parent, prop, receiver);
+                return Reflect.get(parent, prop as string, receiver);
             },
-            set(target: SharedArrayList<T>, prop: string, value: any, receiver: typeof Proxy) {
+            set(target: SharedArrayList<T>, prop: string | Symbol, value: any, receiver: typeof Proxy) {
+                if (typeof prop == "symbol") return Reflect.set(parent, prop, value, receiver);
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0) {
                     if (n >= target.length) {
@@ -100,7 +102,7 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
                     return true;
                 }
 
-                return Reflect.set(parent, prop, value, receiver);
+                return Reflect.set(parent, prop as string, value, receiver);
             }
         });
     }
@@ -111,7 +113,7 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
         if (n >= this.length && n >= this.internalLength.value) {
             let oldArray = this.arrayPtr.deref;
             let newLen = Math.max(1, this.internalLength.value);
-            while(newLen < n){
+            while (newLen < n) {
                 newLen = newLen * SharedArrayList.EXPANSION_FACTOR;
             }
             let newArray = SharedArray.fromData(this._heap, {
@@ -135,9 +137,10 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
      * 
      * @generator
      */
-    *[Symbol.iterator](){
+    *[Symbol.iterator]() {
         let array = this.arrayPtr.deref as SharedArray<any>;
-        for(let i = 0; i < this._length; i++){
+        let len = this.length;
+        for (let i = 0; i < len; i++) {
             yield array[i];
         }
     }

@@ -102,7 +102,8 @@ export class SharedStruct extends SharedReference {
         });
 
         return new Proxy(this, {
-            get(target: SharedStruct, prop: any, receiver: any) {
+            get(target: SharedStruct, prop: string, receiver: any) {
+                if (typeof prop == "symbol") return Reflect.get(target, prop, receiver);
                 if (prop in target.properties) {
                     let v = target.properties[prop];
                     return v;

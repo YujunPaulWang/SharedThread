@@ -106,7 +106,8 @@ export class SharedArray<T extends SharedType> extends SharedReference {
 
 
         return new Proxy(this, {
-            get(target: SharedArray<T>, prop: string, receiver: typeof Proxy) {
+            get(target: SharedArray<T>, prop: string | Symbol, receiver: typeof Proxy) {
+                if (typeof prop == "symbol") return Reflect.get(target, prop, receiver);
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {
@@ -114,9 +115,10 @@ export class SharedArray<T extends SharedType> extends SharedReference {
                     }
                 }
 
-                return Reflect.get(target, prop, receiver);
+                return Reflect.get(target, prop as string, receiver);
             },
-            set(target: SharedArray<T>, prop: string, value: any, receiver: typeof Proxy) {
+            set(target: SharedArray<T>, prop: string | Symbol, value: any, receiver: typeof Proxy) {
+                if (typeof prop == "symbol") return Reflect.set(target, prop, value, receiver);
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {
@@ -130,7 +132,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
                     }
                 }
 
-                return Reflect.set(target, prop, value, receiver);
+                return Reflect.set(target, prop as string, value, receiver);
             }
         });
     }
@@ -165,8 +167,9 @@ export class SharedArray<T extends SharedType> extends SharedReference {
      * 
      * @generator
      */
-    *[Symbol.iterator](){
-        for(let i = 0; i < this._length; i++){
+    *[Symbol.iterator]() {
+        let len = this.length;
+        for (let i = 0; i < len; i++) {
             yield this.elements[i];
         }
     }
