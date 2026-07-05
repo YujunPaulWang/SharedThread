@@ -182,7 +182,7 @@ async function startWorker(){
   await thread.waitFor("finished reading");
 
   //subtract 5 from every value
-  for(let i = 0; i < 3; i++){
+  for(let i = 0; i < myArray.length; i++){
     myArray[i].value -= 5;
   }
 
@@ -204,17 +204,19 @@ async function runWorker(){
   const myArray = await WorkerThread.syncVar("myArray");
 
   //read value before modification
-  console.log(myArray[0].value); //outputs: 3
-  console.log(myArray[1].value); //outputs: 8
-  console.log(myArray[2].value); //outputs: 4
+  console.log("before");
+  for(let int32 of myArray){
+    console.log(int32.value);// outputs 3, 8, 4
+  }
 
   WorkerThread.signal("finished reading");
   await WorkerThread.waitFor("modify value");
 
   //read data from array after modification
-  console.log(myArray[0].value); //outputs: -2
-  console.log(myArray[1].value); //outputs: 3
-  console.log(myArray[2].value); //outputs: -1
+  console.log("after")
+  for(let int32 of myArray){
+    console.log(int32.value);// outputs -2, 3, -1
+  }
 }
 runWorker();
 ```
