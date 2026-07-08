@@ -265,7 +265,7 @@ import { TypeRegistry, SharedStruct, SharedArray, SharedInt32 } from "sharedthre
 
 //it is reccomended to have the type declaration in a different file
 //this allows both the main thead and the worker to access the type
-export class MyStruct extends SharedStruct{
+export class CustomStruct extends SharedStruct{
   static properties = {
     foo: { type: SharedInt32, param: 9},// int32 foo = 9
     bar: { type: SharedArray, param: { // int32[] bar = new int[7]
@@ -282,33 +282,33 @@ struct MyStruct{
 */
 
 //notifies the libary to a custom type
-TypeRegistry.registerType(MyStruct);
+TypeRegistry.registerType(CustomStruct);
 ```
 
 #### `main.js`
 ```typescript
 import { MainThread, SharedHeap } from "sharedthread";
-import { MyStruct } from "./my-types.js";
+import { CustomStruct } from "./my-types.js";
+
+
+let myHeap = new SharedHeap(1000);
+// create a custom strut
+let myStruct = CustomStruct.fromData(myHeap, {
+    foo: 6,// set initial value of foo to 6
+    // note that since bar is a reference type it is translated to a pointer to a SharedArray
+    // this means it cannot have a value set in .fromData
+});
+
+MainThread.declareHeap(myHeap, "myHeap");
+MainThread.declareVar(myStruct, "myStruct");
 
 async function startWorker(){
   // create worker
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
 
-  // create an add heap with 1000 bytes to worker thread
-  const myHeap = new SharedHeap(1000);
-  thread.addHeap(myHeap, "myHeap");
-
-  // create a array of size 6 and type int32
-  const myStruct = MyStruct.fromData(myHeap, {
-    foo: 6, // set the initial value of foo to 6
-  });
   // array is a reference type so it needs to be dereferenced when on another reference type
   myStruct.bar.deref[2].value = 5;
-
-  // make the worker aware of the struct and wait for confirmation
-  await thread.addVar(myStruct, "myStruct");
-
 }
 startWorker().catch(console.error);
 ```
@@ -317,17 +317,17 @@ startWorker().catch(console.error);
 ```typescript
 import { WorkerThread } from 'sharedthread';
 //this import is required to load the custom type properly
-import { MyStruct } from "./my-types.js";
+import "./my-types.js";
+
+//verify that the types are loaded properly(declared variables wont be available if not run)
+WorkerThread.verifyTypes();
+
+let myStruct = WorkerThread.getVar("myStruct");
 
 async function runWorker(){
-  // sync the heap
-  await WorkerThread.syncHeap("myHeap");
-
-  // sync to the array
-  const myStruct = await WorkerThread.syncVar("myStruct");
-
   //read data from array
   console.log(myStruct.foo.value); // outputs: 6
+  // array is a reference type so it needs to be dereferenced when on another reference type
   console.log(myStruct.bar.deref[2].value); // outputs: 5
 }
 runWorker();
