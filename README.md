@@ -97,7 +97,11 @@ async function workerFunction(){
 
 ### Variable Sharing
 
-A `SharedHeap` instance acts as a memory manager allowing for shared variables across threads.
+A `SharedHeap` instance acts as a memory manager allowing for shared variables across threads. Shared variables are defined on the `SharedHeap` instance using `.fromData` on the specified data type. `MainThread.declareHeap` and `MainThread.declareVar` are used to predefine a variable to all future worker threads. `.addHeap`, `.addVar`, `.syncHeap`, and `.syncVar` on the thread instance are used if new variables need to be defined and refernced after thread creation.
+
+**directly calling the constructor of a type is not reccomended as it constructs from a memory address directly instead of using the build in memory manager*
+
+**variables don't need to declared/synced if it is only indirectly referenced(such as through a pointer)*
 
 #### `main.js`
 ```typescript
