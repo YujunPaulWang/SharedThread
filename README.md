@@ -101,7 +101,17 @@ A `SharedHeap` instance acts as a memory manager allowing for shared variables a
 
 #### `main.js`
 ```typescript
-import { MainThread, SharedHeap, SharedInt32 } from "sharedthread";
+import { MainThread, SharedFloat64, SharedHeap, SharedInt32, SharedUint32 } from "sharedthread";
+
+// create a heap with 1000 bytes
+let myHeap = new SharedHeap(1000);
+
+// create a int32 on the heap with starting value of 10
+let myInt32 = SharedInt32.fromData(myHeap, 10);
+
+// declare the heap and variable(only use before worker creation)
+MainThread.declareHeap(myHeap, "myHeap");
+MainThread.declareVar(myInt32, "myInt32");
 
 async function startWorker(){
   // create worker
@@ -109,23 +119,32 @@ async function startWorker(){
   thread.on("error", console.error);
   await thread.ready();
 
-  // create an add heap with 1000 bytes to worker thread
-  const myHeap = new SharedHeap(1000);
-  thread.addHeap(myHeap, "myHeap");
+  // create a new heap
+  let myHeap2 = new SharedHeap(1000);
 
-  // create a shared int32 with a starting value of 10 on the heap
-  const myInt32 = SharedInt32.fromData(myHeap, 10);
+  // create a int32 on the old heap
+  let myUint32 = SharedUint32.fromData(myHeap, 83);
 
-  // make the worker aware of the int32 and wait for confirmation
-  await thread.addVar(myInt32, "myInt32");
+  // create a float64(can hold same values as js number type) on the new heap
+  let myFloat64 = SharedFloat64.fromData(myHeap2, 3.14);
 
-  //change value
-    myInt32.value = 25;
+  // add the new heap and variables(only use after thread creation)
+  thread.addHeap(myHeap2, "myHeap2");
+  thread.addVar(myUint32, "myUint32");
+  thread.addVar(myFloat64, "myFloat64");
 
-  //tell the worker that the value was modified
-  thread.signal("modify value");
+  // wait for the worker thread to modify the values
+  await thread.waitFor("modify values");
 
+  // check values after modification
+  console.log("on main");
 
+  console.log(myInt32.value); // outputs: 30
+  console.log(myUint32.value); // outputs: 59
+  console.log(myFloat64.value); // outputs: 2.71
+
+  //terminate the thread now that tasks are finished
+  thread.terminate();
 }
 startWorker().catch(console.error);
 ```
@@ -134,18 +153,32 @@ startWorker().catch(console.error);
 ```typescript
 import { WorkerThread } from "sharedthread";
 
-async function runWorker(){
-  // sync the heap
-  await WorkerThread.syncHeap("myHeap");
+// get predeclared heap and variables
+let myHeap = WorkerThread.getHeap("myHeap");
+let myInt32 = WorkerThread.getVar("myInt32");
 
-  // sync to the int32 of the main thread
-  const myInt32 = await WorkerThread.syncVar("myInt32");
+async function runWorker() {
+  // sync to heap and variables declared after thread creation
+  // note that syncHeap is a required function(for any variables declared on this heap) even if the heap variable isn't used
+  let myHeap2 = await WorkerThread.syncHeap("myHeap2");
+  let myUint32 = await WorkerThread.syncVar("myUint32");
+  let myFloat64 = await WorkerThread.syncVar("myFloat64");
 
-  //wait for the value to be mofified
-  await WorkerThread.waitFor("modify value");
+  //check values
+  console.log("on worker");
 
+  console.log(myInt32.value); // outputs: 10
+  console.log(myUint32.value); // outputs: 83
+  console.log(myFloat64.value); // outputs: 3.14
 
-  console.log(myInt32.value); // outputs: 25
+  //modify values
+  myInt32.value *= 3;
+  myUint32.value -= 24;
+  myFloat64.value = 2.71;
+
+  //tell the main thread that the value was modified
+  //note that for frequent read/write, a mutex should be used instead
+  WorkerThread.signal("modify values");
 }
 runWorker();
 ```
