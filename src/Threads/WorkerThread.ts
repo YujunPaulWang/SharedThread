@@ -23,33 +23,6 @@ export class WorkerThread extends Thread {
         super(parentPort as PortHandle, workerData.orig.config);
 
         this._workerData = workerData.orig.default;
-        queueMicrotask(() => {
-            TypeRegistry.verifyTypeBuffer(workerData.types);
-        });
-
-        //get variables and heaps
-        for (let name in workerData.heaps) {
-            let { heapID, buffer } = workerData.heaps[name];
-            let heap = new SharedHeap(buffer as SharedArrayBuffer, heapID);
-            this._heaps.set(name, heap);
-        }
-        for (let name in workerData.variables) {
-            let { heapID, addr } = workerData.variables[name];
-            let heap = SharedHeap.getHeapByID(heapID);
-            let isArr: number = heap.getArrayAt(addr);
-            let isPtr: number = heap.getPtrAt(addr);
-            let dataType: SharedTypeClass = TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr));
-            let data: SharedType;
-
-            if (isArr) {
-                data = new SharedArray(heap, addr);
-            } else if (isPtr) {
-                data = new SharedPointer(heap, addr);
-            } else {
-                data = new dataType(heap, addr);
-            }
-            this._variables.set(name, data);
-        }
 
         //set up event handlers
         this.port.on("message", async (msg: WorkerMessage) => {
@@ -97,6 +70,37 @@ export class WorkerThread extends Thread {
                 this.err(err);
             }
         });
+    }
+
+    /**
+     * verify types and load variables
+     */
+    public verifyTypes(){
+        TypeRegistry.verifyTypeBuffer(workerData.types);
+
+        //get variables and heaps
+        for (let name in workerData.heaps) {
+            let { heapID, buffer } = workerData.heaps[name];
+            let heap = new SharedHeap(buffer as SharedArrayBuffer, heapID);
+            this._heaps.set(name, heap);
+        }
+        for (let name in workerData.variables) {
+            let { heapID, addr } = workerData.variables[name];
+            let heap = SharedHeap.getHeapByID(heapID);
+            let isArr: number = heap.getArrayAt(addr);
+            let isPtr: number = heap.getPtrAt(addr);
+            let dataType: SharedTypeClass = TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr));
+            let data: SharedType;
+
+            if (isArr) {
+                data = new SharedArray(heap, addr);
+            } else if (isPtr) {
+                data = new SharedPointer(heap, addr);
+            } else {
+                data = new dataType(heap, addr);
+            }
+            this._variables.set(name, data);
+        }
     }
 
     /**
