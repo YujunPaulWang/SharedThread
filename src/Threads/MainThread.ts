@@ -1,6 +1,8 @@
 import { threadId, threadName, Worker } from "node:worker_threads";
 import { Thread, type ThreadConfig, type ThreadStatic, type WorkerMessage } from "./Thread.js";
 import { TypeRegistry } from "../Memory/TypeRegistry.js";
+import type { SharedHeap } from "../Memory/SharedHeap.js";
+import type { SharedType } from "../Memory/SharedType.js";
 
 import os from "node:os";
 
@@ -17,6 +19,9 @@ export class MainThread extends Thread {
     private worker: Worker;
 
     private active: boolean = false;
+
+    private static heaps: Map<string, Object> = new Map();
+    private static variables: Map<string, Object> = new Map();
 
     /**
      * Creates and initializes a new MainThread instance, spawning the underlying worker.
@@ -53,6 +58,8 @@ export class MainThread extends Thread {
             orig: config.workerOptions.workerData,
             //extra data here for syncing
             types: typeBuffer,
+            heaps: Object.fromEntries(MainThread.heaps),
+            variables: Object.fromEntries(MainThread.variables),
         }
 
 
@@ -78,27 +85,27 @@ export class MainThread extends Thread {
                     this.emit("message", msg.data, msg.label);
                     break;
                 case "sync":
-                    while(!this.emit("sync", msg.name, msg.buffer, msg.heapID, msg.rebound)){
+                    while (!this.emit("sync", msg.name, msg.buffer, msg.heapID, msg.rebound)) {
                         await delay(5);
-                        if(c++ > 100){
+                        if (c++ > 100) {
                             console.warn("unmatched syncHeap/addHeap");
                             break;
                         }
                     }
                     break;
                 case "assign":
-                    while(!this.emit("assign", msg.name, msg.heapID, msg.addr, msg.rebound)){
+                    while (!this.emit("assign", msg.name, msg.heapID, msg.addr, msg.rebound)) {
                         await delay(5);
-                        if(c++ > 100){
+                        if (c++ > 100) {
                             console.warn("unmatched syncVar/addVar");
                             break;
                         }
                     }
                     break;
                 case "signal":
-                    while(!this.emit("signal", msg.label)){
+                    while (!this.emit("signal", msg.label)) {
                         await delay(10);
-                        if(c++ > 100){
+                        if (c++ > 100) {
                             console.warn("unmatched waitFor/signal");
                             break;
                         }
@@ -149,7 +156,7 @@ export class MainThread extends Thread {
             this.port.once("online", () => {
                 res();
             });
-            if(this.active){
+            if (this.active) {
                 res();
             }
         });
@@ -171,7 +178,7 @@ export class MainThread extends Thread {
     //         console.log(`${new Date().toTimeString()} - ${threadName}(${threadId}) - ${msg}`);
     //     }
     // }
-    
+
     /**
      * Formats and throws an internal execution error for the main thread environment.
      * @param msg The error instance or error message string.
@@ -200,6 +207,36 @@ export class MainThread extends Thread {
      */
     public unref(): void {
         this.port.unref();
+    }
+
+    /**
+     * Declares a heap to be shared with workers
+     * @param heap the heap that is shared
+     * @param name the name of the heap
+     */
+    public static declareHeap(heap: SharedHeap, name: string): void {
+        if (MainThread.heaps.has(name)) {
+            throw new Error("duplicate heap declaration");
+        }
+        MainThread.heaps.set(name, {
+            heapID: heap.heapID,
+            buffer: heap.buffer,
+        });
+    };
+
+    /**
+     * Declares a variable to be shared with workers
+     * @param variable the variable to be shared
+     * @param name the name of the variable
+     */
+    public static declareVar(variable: SharedType, name: string): void {
+        if (MainThread.variables.has(name)) {
+            throw new Error("duplicate variable declaration");
+        }
+        MainThread.variables.set(name, {
+            heapID: variable.heap.heapID,
+            addr: variable.addr,
+        });
     }
 
     //todo
