@@ -189,12 +189,25 @@ runWorker();
 
 ### Shared Array
 
-A `SharedArray` is a array of a fixed size that can be accessed across workers.
-For a resizable array use SharedArrayList instead.
+A `SharedArray` is a array of a fixed size and fixed type that can be accessed across workers.
+For a resizable array use `SharedArrayList` instead.
+
+**length is an optional paramater for `SharedArrayList` but not for `SharedArray`*
 
 #### `main.js`
 ```typescript
 import { MainThread, SharedHeap, SharedArray, SharedInt32 } from "sharedthread";
+
+const myHeap = new SharedHeap(1000);
+const myArray = SharedArray.fromData(myHeap, {
+type: SharedInt32,
+  length: 3,
+  // the array property can be used to set an initial value(optional)
+  array: [3, 8, 4],
+});
+
+MainThread.declareHeap(myHeap, "myHeap");
+MainThread.declareVar(myArray, "myArray");
 
 async function startWorker(){
   // create worker
@@ -202,20 +215,7 @@ async function startWorker(){
   thread.on("error", console.error);
   await thread.ready();
 
-  // create an add heap with 1000 bytes to worker thread
-  const myHeap = new SharedHeap(1000);
-  thread.addHeap(myHeap, "myHeap");
-
-  // create a array of size 6 and type int32
-  const myArray = SharedArray.fromData(myHeap, {
-    type: SharedInt32,
-    length: 3,
-    // the array property can be used to set an initial value(optional)
-    array: [3, 8, 4],
-  });
-
-  // make the worker aware of the array and wait for confirmation
-  await thread.addVar(myArray, "myArray");
+  //wait for thread to finish reading values
   await thread.waitFor("finished reading");
 
   //subtract 5 from every value
@@ -223,6 +223,7 @@ async function startWorker(){
     myArray[i].value -= 5;
   }
 
+  //tell thread that the values were modified
   thread.signal("modify value");
 
 }
@@ -233,13 +234,9 @@ startWorker().catch(console.error);
 ```typescript
 import { WorkerThread } from "sharedthread";
 
+let myArray = WorkerThread.getVar("myArray");
+
 async function runWorker(){
-  // sync the heap
-  await WorkerThread.syncHeap("myHeap");
-
-  // sync to the array
-  const myArray = await WorkerThread.syncVar("myArray");
-
   //read value before modification
   console.log("before");
   for(let int32 of myArray){
