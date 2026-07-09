@@ -99,7 +99,7 @@ async function workerFunction(){
 
 A `SharedHeap` instance acts as a memory manager allowing for shared variables across threads. Shared variables are defined on the `SharedHeap` instance using `.fromData` on the specified data type. `MainThread.declareHeap` and `MainThread.declareVar` are used to predefine a variable to all future worker threads. `.addHeap`, `.addVar`, `.syncHeap`, and `.syncVar` on the thread instance are used if new variables need to be defined and refernced after thread creation.
 
-**directly calling the constructor of a type is not reccomended as it constructs from a memory address directly instead of using the build in memory manager*
+**directly calling the constructor of a type is not recomended as it constructs from a memory address directly instead of using the build in memory manager*
 
 **variables don't need to declared/synced if it is only indirectly referenced(such as through a pointer)*
 
@@ -398,15 +398,15 @@ A mutex can restrict access to a variable so only one thread has access at a tim
 ```typescript
 import { MainThread, Mutex, SharedHeap, SharedInt32 } from "sharedthread";
 
+let myHeap = new SharedHeap(1000);
+let myMutex = Mutex.fromData(myHeap);
+let myInt32 = SharedInt32.fromData(myHeap, 0);
+
+MainThread.declareHeap(myHeap, "myHeap");
+MainThread.declareVar(myMutex, "myMutex");
+MainThread.declareVar(myInt32, "myInt32");
+
 async function startWorker(){
-  //create heap
-  const myHeap = new SharedHeap(1000);
-
-  //create int32 and mutex
-  const myMutex = Mutex.fromData(myHeap);
-  const myInt32 = SharedInt32.fromData(myHeap, 0); 
-
-
   // create 4 workers
   const threads = [];
   for(let i = 0; i < 4; i++){
@@ -416,18 +416,8 @@ async function startWorker(){
     threads.push(thread);
   }
 
-  //setup promise for everything finishing
-  let completionPromises = Promise.all(threads.map(t => t.waitFor("done")));
-  
-  //sync heap, mutex, int32
-  for(let thread of threads){
-    thread.addHeap(myHeap, "myHeap");
-    thread.addVar(myMutex, "myMutex");
-    thread.addVar(myInt32, "myInt32");
-  }
-
   //wait for all threads to finish adding
-  await completionPromises;
+  await Promise.all(threads.map(t => t.waitFor("done")));
 
   console.log(myInt32.value);//outputs: 400
 
@@ -441,14 +431,10 @@ startWorker().catch(console.error);
 ```typescript
 import { WorkerThread } from 'sharedthread';
 
+let myMutex = WorkerThread.getVar("myMutex");
+let myInt32 = WorkerThread.getVar("myInt32");
+
 async function runWorker(){
-  // sync the heap
-  let heap = await WorkerThread.syncHeap("myHeap");
-
-  //sync the int and mutex
-  let myMutex = await WorkerThread.syncVar("myMutex");
-  let myInt32 = await WorkerThread.syncVar("myInt32");
-
   for(let i = 0; i < 100; i++){
     //enter critical section using mutex
     await myMutex.use(() => {
