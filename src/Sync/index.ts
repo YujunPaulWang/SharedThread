@@ -1,1 +1,2 @@
-export * from "./Mutex.js"
+export * from "./Mutex.js";
+export * from "./Semaphore.js";
