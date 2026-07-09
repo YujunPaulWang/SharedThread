@@ -1,12 +1,14 @@
 import type { SharedHeap } from "../Memory/SharedHeap.js";
-import type { SharedPrimitiveStatic } from "../Memory/SharedPrimitive.js";
-import { SharedInt32, type int32 } from "../Memory/SharedInt32.js";
+import { SharedPrimitive, type SharedPrimitiveStatic } from "../Memory/SharedPrimitive.js";
+import { type int32 } from "../Memory/SharedInt32.js";
 import { TypeRegistry } from "../Memory/TypeRegistry.js";
 
 import { threadId } from "node:worker_threads";
 
 
-export class Mutex extends SharedInt32 {
+export class Mutex extends SharedPrimitive<int32>{
+    static readonly byteSize: number = 4;
+    
     static readonly threadID: number = threadId;
     static readonly UNLOCKED: number = -1;
 
