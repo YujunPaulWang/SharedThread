@@ -341,25 +341,22 @@ Pointers can point to any shared primitive or reference variable in the **same**
 ```typescript
 import { MainThread, SharedHeap, SharedFloat64, SharedPointer } from "sharedthread";
 
+let myHeap = new SharedHeap(1000);
+let myFloat64 = SharedFloat64.fromData(myHeap, Math.PI);
+let myPointer = SharedPointer.fromData(myHeap, {
+    type: SharedFloat64,
+    addr: myFloat64.addr,
+})
+
+// notice how we only declare the heap and the pointer
+// this is because the float64 is indirectly referenced
+MainThread.declareHeap(myHeap, "myHeap");
+MainThread.declareVar(myPointer, "myPointer");
+
 async function startWorker(){
   // create worker
   const thread = new MainThread("./my-worker.js");
   thread.on("error", console.error);
-
-  // create an add heap with 1000 bytes to worker thread
-  const myHeap = new SharedHeap(1000);
-  thread.addHeap(myHeap, "myHeap");
-
-  //create a float64(equivalent to js number) and a pointer
-  let myFloat64 = SharedFloat64.fromData(myHeap, Math.PI);
-  let myPointer = SharedPointer.fromData(myHeap, {
-    type: SharedFloat64,
-    //optionally add the initial address it points to
-    addr: myFloat64.addr
-  });
-
-  //because the float64 is indirectly referenced, it doesn't need to be synced
-  await thread.addVar(myPointer, "myPointer");
 
   //wait for the worker thread
   await thread.waitFor("pointer modified");
@@ -375,18 +372,16 @@ startWorker().catch(console.error);
 ```typescript
 import { SharedFloat64, WorkerThread } from 'sharedthread';
 
+
+let myHeap = WorkerThread.getHeap("myHeap");
+let myPointer = WorkerThread.getVar("myPointer");
+
 async function runWorker(){
-  // sync the heap
-  let heap = await WorkerThread.syncHeap("myHeap");
-
-  //only the pointer needs to be synced
-  let myPointer = await WorkerThread.syncVar("myPointer");
-
   console.log(myPointer.heldType);// outputs: Class SharedFloat64{...}
   console.log(myPointer.deref.value);// outputs: 3.141592653589793(Math.PI)
 
-  //add a different float32 to the pointer(has to bee same type as before and same heap as pointer)
-  let myNewFloat64 = SharedFloat64.fromData(heap, Math.E);
+  //add a different float32 to the pointer(has to be the same type as before and same heap as pointer)
+  let myNewFloat64 = SharedFloat64.fromData(myHeap, Math.E);
   myPointer.deref = myNewFloat64;
 
   //tell the main thread the pointer has been modified
