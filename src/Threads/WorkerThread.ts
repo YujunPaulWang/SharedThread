@@ -24,6 +24,32 @@ export class WorkerThread extends Thread {
 
         this._workerData = workerData.orig.default;
 
+        //attempt toget variables and heap
+        for (let name in workerData.heaps) {
+            let { heapID, buffer } = workerData.heaps[name];
+            let heap = new SharedHeap(buffer as SharedArrayBuffer, heapID);
+            this._heaps.set(name, heap);
+        }
+        for (let name in workerData.variables) {
+            try {
+                let { heapID, addr } = workerData.variables[name];
+                let heap = SharedHeap.getHeapByID(heapID);
+                let isArr: number = heap.getArrayAt(addr);
+                let isPtr: number = heap.getPtrAt(addr);
+                let dataType: SharedTypeClass = TypeRegistry.getTypeByIndex(heap.getTypeIDAt(addr));
+                let data: SharedType;
+
+                if (isArr) {
+                    data = new SharedArray(heap, addr);
+                } else if (isPtr) {
+                    data = new SharedPointer(heap, addr);
+                } else {
+                    data = new dataType(heap, addr);
+                }
+                this._variables.set(name, data);
+            } catch (e) { }
+        }
+
         //set up event handlers
         this.port.on("message", async (msg: WorkerMessage) => {
             const delay = (t: number) => new Promise(res => setTimeout(res, t));
@@ -75,15 +101,10 @@ export class WorkerThread extends Thread {
     /**
      * verify types and load variables
      */
-    public verifyTypes(){
+    public verifyTypes() {
         TypeRegistry.verifyTypeBuffer(workerData.types);
 
-        //get variables and heaps
-        for (let name in workerData.heaps) {
-            let { heapID, buffer } = workerData.heaps[name];
-            let heap = new SharedHeap(buffer as SharedArrayBuffer, heapID);
-            this._heaps.set(name, heap);
-        }
+        //get variables
         for (let name in workerData.variables) {
             let { heapID, addr } = workerData.variables[name];
             let heap = SharedHeap.getHeapByID(heapID);
