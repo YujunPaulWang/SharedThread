@@ -127,6 +127,7 @@ export class SharedStruct extends SharedReference {
                 return Reflect.get(target, prop, receiver);
             },
             set(target: SharedStruct, prop: string, value: any, receiver: any) {
+                if (typeof prop == "symbol") return Reflect.set(target, prop, value, receiver);
                 if(!target.autoDeref && !target.autoValue) throw new Error("cannot assign to value");
                 let obj = target.properties[prop];
                 if(target.autoDeref && obj instanceof SharedPointer){
