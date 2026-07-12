@@ -139,7 +139,8 @@ export class SharedStruct extends SharedReference {
                         return true;
                     }
                 }else if(target.autoValue && obj instanceof SharedPrimitive && !(obj instanceof SharedPointer)){
-                    return obj.value;
+                    obj.value = value;
+                    return true;
                 }
 
                 return Reflect.set(target, prop as string, value, receiver);
