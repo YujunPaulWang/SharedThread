@@ -65,6 +65,12 @@ export class SharedStruct extends SharedReference {
 
     protected properties: Record<string, SharedType> = {};
 
+    public static autoValue = false;
+    public static autoDeref = false;
+
+    public autoValue: boolean = SharedStruct.autoValue;
+    public autoDeref: boolean = SharedStruct.autoDeref;
+
     /**
      * Creates an instance of SharedStruct, mapping layout offsets and proxying properties.
      * @param heap - The shared heap instance managing memory layouts.
@@ -106,10 +112,34 @@ export class SharedStruct extends SharedReference {
                 if (typeof prop == "symbol") return Reflect.get(target, prop, receiver);
                 if (prop in target.properties) {
                     let v = target.properties[prop];
+                    if(target.autoDeref && v instanceof SharedPointer){
+                        if(target.autoValue && v.deref instanceof SharedPrimitive && !(v.deref instanceof SharedPointer)){
+                            return v.deref.value
+                        }else{
+                            return v.deref;
+                        }
+                    }else if(target.autoValue){
+                        return (v as SharedPrimitive<any>).value;
+                    }
                     return v;
                 }
 
                 return Reflect.get(target, prop, receiver);
+            },
+            set(target: SharedStruct, prop: string, value: any, receiver: any) {
+                if(!target.autoDeref && !target.autoValue) throw new Error("cannot assign to value");
+                let obj = target.properties[prop];
+                if(target.autoDeref && obj instanceof SharedPointer){
+                    if(target.autoValue && obj.deref instanceof SharedPrimitive && !(obj.deref instanceof SharedPointer)){
+                        obj.deref.value = value;
+                        return true;
+                    }else{
+                        obj.deref = value;
+                        return true;
+                    }
+                }
+
+                return Reflect.set(target, prop as string, value, receiver);
             }
         });
     }
