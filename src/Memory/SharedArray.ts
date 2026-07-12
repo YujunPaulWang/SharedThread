@@ -73,6 +73,11 @@ export class SharedArray<T extends SharedType> extends SharedReference {
         return obj;
     }
 
+    public static autoValue = false;
+    public static autoDeref = false;
+
+    public autoValue: boolean = SharedArray.autoValue;
+    public autoDeref: boolean = SharedArray.autoDeref;
 
     protected readonly _heldType: SharedTypeClass;
     protected readonly _elementType: SharedTypeClass;
@@ -111,7 +116,17 @@ export class SharedArray<T extends SharedType> extends SharedReference {
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {
-                        return target.elements[n];
+                        let v = target.elements[n];
+                        if (target.autoDeref && v instanceof SharedPointer) {
+                            if (target.autoValue && v.deref instanceof SharedPrimitive && !(v.deref instanceof SharedPointer)) {
+                                return v.deref.value
+                            } else {
+                                return v.deref;
+                            }
+                        } else if (target.autoValue && v instanceof SharedPrimitive && !(v instanceof SharedPointer)) {
+                            return v.value;
+                        }
+                        return v;
                     }
                 }
 
@@ -119,14 +134,21 @@ export class SharedArray<T extends SharedType> extends SharedReference {
             },
             set(target: SharedArray<T>, prop: string | Symbol, value: any, receiver: typeof Proxy) {
                 if (typeof prop == "symbol") return Reflect.set(target, prop, value, receiver);
+                if (!target.autoDeref && !target.autoValue) throw new Error("cannot assign to value");
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {
-                        if (target.elements[n] instanceof SharedPrimitive) {
-                            target.elements[n].value = value;
-                            return true;
-                        } else if (target.elements[n] instanceof SharedPointer) {
-                            target.elements[n].value = value.addr;
+                        let obj = target.elements[n];
+                        if (target.autoDeref && obj instanceof SharedPointer) {
+                            if (target.autoValue && obj.deref instanceof SharedPrimitive && !(obj.deref instanceof SharedPointer)) {
+                                obj.deref.value = value;
+                                return true;
+                            } else {
+                                obj.deref = value;
+                                return true;
+                            }
+                        } else if (target.autoValue && obj instanceof SharedPrimitive && !(obj instanceof SharedPointer)) {
+                            obj.value = value;
                             return true;
                         }
                     }
