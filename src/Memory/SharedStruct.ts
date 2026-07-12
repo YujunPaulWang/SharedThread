@@ -118,8 +118,8 @@ export class SharedStruct extends SharedReference {
                         }else{
                             return v.deref;
                         }
-                    }else if(target.autoValue){
-                        return (v as SharedPrimitive<any>).value;
+                    }else if(target.autoValue && v instanceof SharedPrimitive && !(v instanceof SharedPointer)){
+                        return v.value;
                     }
                     return v;
                 }
@@ -138,6 +138,8 @@ export class SharedStruct extends SharedReference {
                         obj.deref = value;
                         return true;
                     }
+                }else if(target.autoValue && obj instanceof SharedPrimitive && !(obj instanceof SharedPointer)){
+                    return obj.value;
                 }
 
                 return Reflect.set(target, prop as string, value, receiver);
