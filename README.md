@@ -258,10 +258,15 @@ runWorker();
 ### Custom Struct
 
 Any class that extends SharedStruct can act as a shared struct. Structs automatically convert reference types to pointers to that reference type.
+**.deref and .value calls on SharedStruct, SharedArray, SharedArrayList may be bypassed using a public property on SharedStruct(.autoDeref and .autoValue), this does NOT work on isolated primitives and pointers*
+**if the property is set set it on both the worker and main thread(it is advised to put it in the types file)*
 
 #### `my-types.js`
 ```typescript
 import { TypeRegistry, SharedStruct, SharedArray, SharedInt32 } from "sharedthread";
+
+SharedStruct.autoDeref = false;//set to true to skip .deref calls on structs
+SharedStruct.autoValue = false//set to true to skip .value calls on structs
 
 //it is reccomended to have the type declaration in a different file
 //this allows both the main thead and the worker to access the type
