@@ -192,7 +192,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
     *[Symbol.iterator]() {
         let len = this.length;
         for (let i = 0; i < len; i++) {
-            yield this.elements[i];
+            yield this[i];
         }
     }
 }
