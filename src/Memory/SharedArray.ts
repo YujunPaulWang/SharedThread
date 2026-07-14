@@ -134,7 +134,6 @@ export class SharedArray<T extends SharedType> extends SharedReference {
             },
             set(target: SharedArray<T>, prop: string | Symbol, value: any, receiver: typeof Proxy) {
                 if (typeof prop == "symbol") return Reflect.set(target, prop, value, receiver);
-                if (!target.autoDeref && !target.autoValue) throw new Error("cannot assign to value");
                 let n = Number(prop);
                 if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0 && n < target._length) {
                     if (target.elements[n] != undefined) {
@@ -147,7 +146,7 @@ export class SharedArray<T extends SharedType> extends SharedReference {
                                 obj.deref = value;
                                 return true;
                             }
-                        } else if (target.autoValue && obj instanceof SharedPrimitive && !(obj instanceof SharedPointer)) {
+                        } else if ("value" in obj) {
                             obj.value = value;
                             return true;
                         }

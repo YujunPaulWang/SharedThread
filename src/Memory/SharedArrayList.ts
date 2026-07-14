@@ -87,7 +87,11 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
                     if (n >= target.length) {
                         target.length = n + 1;
                     }
-                    return target.arrayPtr.deref[n];
+                    if(SharedStruct.autoDeref){
+                        return target.arrayPtr[n];
+                    }else{
+                        return target.arrayPtr.deref[n];
+                    }
                 }
                 return Reflect.get(parent, prop as string, receiver);
             },
@@ -98,7 +102,11 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
                     if (n >= target.length) {
                         target.length = n + 1;
                     }
-                    target.arrayPtr.deref[n] = value;
+                    let array = target.arrayPtr;
+                    if(!SharedStruct.autoDeref){
+                        array = array.deref;
+                    }
+                    array[n] = value;
                     return true;
                 }
 
