@@ -5,7 +5,7 @@ import { SharedPointer } from "./SharedPointer.js";
 import { SharedPrimitive, type SharedPrimitiveClass } from "./SharedPrimitive.js";
 import { TypeRegistry } from "./TypeRegistry.js";
 import { SharedUint32 } from "./SharedUint32.js";
-import type { VariableDeclaration } from "./SharedStruct.js";
+import { SharedStruct, type VariableDeclaration } from "./SharedStruct.js";
 
 interface ArrayDefinition {
     type: SharedTypeClass,
@@ -74,11 +74,8 @@ export class SharedArray<T extends SharedType> extends SharedReference {
         return obj;
     }
 
-    public static autoValue = false;
-    public static autoDeref = false;
-
-    public autoValue: boolean = SharedArray.autoValue;
-    public autoDeref: boolean = SharedArray.autoDeref;
+    public autoValue: boolean = SharedStruct.autoValue;
+    public autoDeref: boolean = SharedStruct.autoDeref;
 
     protected readonly _heldType: SharedTypeClass;
     protected readonly _elementType: SharedTypeClass;
