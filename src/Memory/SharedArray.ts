@@ -50,7 +50,8 @@ export class SharedArray<T extends SharedType> extends SharedReference {
         heap: SharedHeap,
         v: ArrayDefinition
     ): SharedArray<any> {
-        let length = v.length;
+        let length = v.length ?? v.array?.length;
+        if(!Number.isInteger(length) || length <= 0) throw new Error("cannot create array of invalid length");
         let type = v.type;
         if (type.prototype instanceof SharedPrimitive) {
             type = type as SharedPrimitiveClass<any>;
