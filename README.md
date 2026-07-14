@@ -1,6 +1,6 @@
 # SharedThread
 
-[![v1.1.0](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
+[![v1.1.2](https://img.shields.io/npm/v/sharedthread)](https://www.npmjs.com/package/sharedthread)
 
 
 A high-performance asynchronous multithreading library that wraps Node.js Worker Threads and SharedArrayBuffer for efficient, zero-copy variable sharing.
