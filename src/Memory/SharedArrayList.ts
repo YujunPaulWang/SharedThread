@@ -25,7 +25,7 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
 
     public static readonly properties: Record<string, VariableDeclaration> = {
         _length: { type: SharedUint32 },
-        internalLength: { type: SharedUint32 },
+        _internalLength: { type: SharedUint32 },
         arrayPtr: {
             type: SharedPointer, param: {
                 type: SharedArray
@@ -68,9 +68,17 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
             array: v.array,
         });
 
-        obj._length.value = length;
-        obj.internalLength.value = length;
+        if(obj.autoValue){
+            obj._length = length;
+        }else{
+            obj._length.value = length;
+        }
+        obj.internalLength = length;
+
+        let state = obj.autoDeref;
+        obj.autoDeref = false;
         obj.arrayPtr.deref = array;
+        obj.autoDeref = state;
 
         return obj as SharedArrayList<any>;
     }
@@ -87,7 +95,7 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
                     if (n >= target.length) {
                         target.length = n + 1;
                     }
-                    if(SharedStruct.autoDeref){
+                    if(target.autoDeref){
                         return target.arrayPtr[n];
                     }else{
                         return target.arrayPtr.deref[n];
@@ -115,12 +123,16 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
         });
     }
     get length(): number {
-        return this._length.value;
+        if(this.autoValue){
+            return this._length;
+        }else{
+            return this._length.value;
+        }
     }
     set length(n: number) {
-        if (n >= this.length && n >= this.internalLength.value) {
-            let oldArray = this.arrayPtr.deref;
-            let newLen = Math.max(1, this.internalLength.value);
+        if (n >= this.length && n >= this.internalLength) {
+            let oldArray = this.autoDeref ? this.arrayPtr : this.arrayPtr.deref;
+            let newLen = Math.max(1, this.internalLength);
             while (newLen < n) {
                 newLen = newLen * SharedArrayList.EXPANSION_FACTOR;
             }
@@ -130,14 +142,41 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
                 //array: oldArray,
             }) as SharedArray<any>;
             for (let i = 0; i < oldArray.length; i++) {
-                newArray[i].value = oldArray[i].value;
+                let v = oldArray.autoValue ? oldArray[i] : oldArray[i].value;
+                if(newArray.autoValue){
+                    newArray[i] = v;
+                }else{
+                    newArray[i].value = v;
+                }
             }
 
-            this.internalLength.value = newArray.length;
+            this.internalLength = newArray.length;
             this._heap.free(oldArray.addr);
+
+            let state = this.autoDeref;
+            this.autoDeref = false;
             this.arrayPtr.deref = newArray;
+            this.autoDeref = state;
         }
-        this._length.value = n;
+        if(this.autoValue){
+            this._length = n;
+        }else{
+            this._length.value = n;
+        }
+    }
+    get internalLength(): number{
+        if(this.autoValue){
+            return this._internalLength;
+        }else{
+            return this._internalLength.value;
+        }
+    }
+    set internalLength(n: number){
+        if(this.autoValue){
+            this._internalLength = n;
+        }else{
+            this._internalLength.value = n;
+        }
     }
 
     /**
@@ -146,7 +185,7 @@ export class SharedArrayList<T extends SharedType> extends SharedStruct {
      * @generator
      */
     *[Symbol.iterator]() {
-        let array = this.arrayPtr.deref as SharedArray<any>;
+        let array = this.autoDeref ? this.arrayPtr : this.arrayPtr.deref as SharedArray<any>;
         let len = this.length;
         for (let i = 0; i < len; i++) {
             yield array[i];
